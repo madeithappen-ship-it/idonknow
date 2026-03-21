@@ -9,13 +9,13 @@ services:
       - key: DEVELOPMENT_MODE
         value: "false"
       - key: DB_HOST
-        value: YOUR_INFINITYFREE_HOST
+        value: mysql-16fe8592-ianshakes16-0080.b.aivencloud.com
       - key: DB_PORT
-        value: "3306"
+        value: "10353"
       - key: DB_USER
-        value: YOUR_INFINITYFREE_USER
+        value: avnadmin
       - key: DB_NAME
-        value: if0_41445085
+        value: defaultdb
       - key: APP_URL
         value: https://mylifeisboring.onrender.com
       - key: ADMIN_URL_SECRET

@@ -90,11 +90,20 @@ try {
            ";dbname=" . $db_config['name'] . 
            ";charset=utf8mb4";
     
-    $pdo = new PDO($dsn, $db_config['user'], $db_config['pass'], [
+    // SSL options for Aiven or other secure connections
+    $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
+    ];
+    
+    // Add SSL options if needed (for services like Aiven)
+    if (!empty($_ENV['DB_SSL']) || strpos($db_config['host'], 'aiven') !== false) {
+        $options[PDO::MYSQL_ATTR_SSL_CA] = '/etc/ssl/certs/ca-certificates.crt';
+        $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+    }
+    
+    $pdo = new PDO($dsn, $db_config['user'], $db_config['pass'], $options);
     
     // Test connection
     $pdo->query("SELECT 1");
