@@ -566,6 +566,11 @@ $token = csrf_token();
                     <div style="margin-top: 8px; font-size: 16px; line-height: 1.5;">
                         <?php echo format_text($note['message']); ?>
                     </div>
+                    <?php if (!empty($note['image_path'])): ?>
+                        <div style="margin-top: 15px;">
+                            <img src="<?php echo escape($note['image_path']); ?>" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.5);" alt="Notification Attachment">
+                        </div>
+                    <?php endif; ?>
                     <div style="font-size: 12px; color: #aaa; margin-top: 8px;">
                         Sent <?php echo date('M d, g:i A', strtotime($note['created_at'])); ?>
                     </div>

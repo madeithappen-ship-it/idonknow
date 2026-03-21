@@ -431,10 +431,16 @@ $token = csrf_token();
                 
                 <div style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
                     <h3 style="color: #64B5F6; margin-bottom: 15px;">📢 Send Notification / Announcement</h3>
-                    <form method="POST" action="manage_notifications.php" style="display: flex; gap: 10px; flex-direction: column;">
+                    <form method="POST" action="manage_notifications.php" enctype="multipart/form-data" style="display: flex; gap: 10px; flex-direction: column;">
                         <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
                         <input type="hidden" name="action" value="add">
-                        <textarea name="message" required placeholder="Type the announcement or direct message here..." style="padding: 10px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; resize: vertical; min-height: 80px;"></textarea>
+                        <textarea name="message" placeholder="Type the announcement or direct message here..." style="padding: 10px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; resize: vertical; min-height: 80px;"></textarea>
+                        
+                        <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; border: 1px dashed #4CAF50;">
+                            <label style="color: #ccc; font-size: 13px; display: block; margin-bottom: 5px;">🖼️ Attach an Image (Optional):</label>
+                            <input type="file" name="image" accept="image/*" style="color: #fff; font-size: 13px;">
+                        </div>
+
                         <div style="display: flex; gap: 10px;">
                             <input type="text" name="target_user" placeholder="All Users (or enter Username/ID for private message)" style="padding: 8px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; flex: 1;">
                             <button type="submit" style="background: #2196F3; color: #fff; border: none; padding: 0 20px; border-radius: 6px; font-weight: bold; cursor: pointer;">Send Now</button>
@@ -458,6 +464,11 @@ $token = csrf_token();
                                     <small style="color: #aaa;"><?php echo date('M d, g:i A', strtotime($note['created_at'])); ?></small>
                                 </div>
                                 <p><?php echo format_text($note['message']); ?></p>
+                                <?php if (!empty($note['image_path'])): ?>
+                                    <div style="margin-top: 10px;">
+                                        <a href="<?php echo escape($note['image_path']); ?>" target="_blank" style="color: #64B5F6; text-decoration: underline; font-size: 12px;">🖼️ View Attached Image</a>
+                                    </div>
+                                <?php endif; ?>
                                 <form method="POST" action="manage_notifications.php" style="position: absolute; top: 15px; right: 15px;" onsubmit="return confirm('Delete this notification?');">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo $note['id']; ?>">
