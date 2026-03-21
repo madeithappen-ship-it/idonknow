@@ -549,6 +549,31 @@ $token = csrf_token();
                     </div>
                     <div class="quest-description"><?php echo nl2br(escape($quest['description'])); ?></div>
                     
+                    <?php
+                        $dq_reject_reason = '';
+                        $dq_verif_status = '';
+                        if (!empty($quest['submission_id'])) {
+                            $stmt_sub = $pdo->prepare("SELECT verification_status, verification_notes FROM submissions WHERE id = ?");
+                            $stmt_sub->execute([$quest['submission_id']]);
+                            if ($sb = $stmt_sub->fetch()) {
+                                $dq_verif_status = $sb['verification_status'];
+                                $dq_reject_reason = $sb['verification_notes'];
+                            }
+                        }
+                    ?>
+                    
+                    <?php if ($dq_verif_status === 'rejected' && ($quest['status'] === 'in_progress' || $quest['status'] === 'expired')): ?>
+                        <div style="padding: 15px; background: rgba(244, 67, 54, 0.2); border-left: 4px solid #f44336; border-radius: 4px; margin-bottom: 20px;">
+                            <h4 style="color: #ff9999; margin-bottom: 5px;">❌ Proof Rejected</h4>
+                            <p style="color: #fff; font-size: 14px;"><strong>Admin note:</strong> <?php echo escape($dq_reject_reason ?: 'No specific reason provided.'); ?></p>
+                            <?php if ($quest['status'] === 'expired'): ?>
+                                <p style="margin-top: 10px; color: #ff9999; font-weight: bold;">Out of attempts!</p>
+                            <?php else: ?>
+                                <p style="margin-top: 10px; color: #aaa; font-size: 12px;">You can try again and upload a new proof.</p>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                    
                     <?php if ($quest['status'] === 'assigned' || $quest['status'] === 'in_progress'): ?>
                         <div class="upload-area" onclick="document.getElementById('proofInput_daily').click();">
                             <input type="file" id="proofInput_daily" name="proof" accept="image/*,video/*" onchange="previewProof(event, 'daily')" style="display:none;">
@@ -589,6 +614,31 @@ $token = csrf_token();
                     <div class="quest-description">
                         <?php echo nl2br(escape($current_quest['description'])); ?>
                     </div>
+                    
+                    <?php
+                        $rq_reject_reason = '';
+                        $rq_verif_status = '';
+                        if (!empty($current_quest['submission_id'])) {
+                            $stmt_sub = $pdo->prepare("SELECT verification_status, verification_notes FROM submissions WHERE id = ?");
+                            $stmt_sub->execute([$current_quest['submission_id']]);
+                            if ($sb = $stmt_sub->fetch()) {
+                                $rq_verif_status = $sb['verification_status'];
+                                $rq_reject_reason = $sb['verification_notes'];
+                            }
+                        }
+                    ?>
+                    
+                    <?php if ($rq_verif_status === 'rejected' && ($current_quest['status'] === 'in_progress' || $current_quest['status'] === 'expired')): ?>
+                        <div style="padding: 15px; background: rgba(244, 67, 54, 0.2); border-left: 4px solid #f44336; border-radius: 4px; margin-bottom: 20px;">
+                            <h4 style="color: #ff9999; margin-bottom: 5px;">❌ Proof Rejected</h4>
+                            <p style="color: #fff; font-size: 14px;"><strong>Admin note:</strong> <?php echo escape($rq_reject_reason ?: 'No specific reason provided.'); ?></p>
+                            <?php if ($current_quest['status'] === 'expired'): ?>
+                                <p style="margin-top: 10px; color: #ff9999; font-weight: bold;">Out of attempts for this quest!</p>
+                            <?php else: ?>
+                                <p style="margin-top: 10px; color: #aaa; font-size: 12px;">You can try again and upload a new proof below.</p>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                     
                     <?php if ($current_quest['status'] === 'assigned' || $current_quest['status'] === 'in_progress'): ?>
                         <div><strong>Status:</strong> In Progress - Submit your proof below</div>
@@ -791,6 +841,37 @@ $token = csrf_token();
                 .catch(err => alert('Error skipping quest'));
             }
         }
+        
+        // Handle physical drag and drop targeting
+        function setupDragDrop(type) {
+            const area = document.querySelector('.upload-area[onclick*="' + type + '"]');
+            if (!area) return;
+            
+            area.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                area.style.background = 'rgba(76, 175, 80, 0.2)';
+                area.style.borderColor = '#4CAF50';
+            });
+            area.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                area.style.background = 'transparent';
+                area.style.borderColor = 'rgba(76, 175, 80, 0.5)';
+            });
+            area.addEventListener('drop', (e) => {
+                e.preventDefault();
+                area.style.background = 'transparent';
+                area.style.borderColor = 'rgba(76, 175, 80, 0.5)';
+                
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    const fakeEvent = { target: { files: files } };
+                    previewProof(fakeEvent, type);
+                }
+            });
+        }
+        
+        setupDragDrop('regular');
+        setupDragDrop('daily');
         
         // Auto-refresh notifications
         let currentNotifMaxId = <?php echo (int)$notif_max_id; ?>;
