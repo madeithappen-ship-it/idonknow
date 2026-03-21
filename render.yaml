@@ -9,42 +9,18 @@ services:
       - key: DEVELOPMENT_MODE
         value: "false"
       - key: DB_HOST
-        fromDatabase:
-          name: sidequest-db
-          property: host
+        value: dpg-d6vbt014tr6s73dhtpb0-a.oregon-postgres.render.com
       - key: DB_PORT
-        fromDatabase:
-          name: sidequest-db
-          property: port
+        value: "5432"
       - key: DB_USER
-        fromDatabase:
-          name: sidequest-db
-          property: user
+        value: mylifeisboring1_user
       - key: DB_PASS
-        fromDatabase:
-          name: sidequest-db
-          property: password
+        value: qnnWcvycItsuDSasshlpH06kRV8BFekN
       - key: DB_NAME
-        value: sidequest_app
+        value: mylifeisboring1
       - key: APP_URL
-        fromService:
-          type: web
-          property: url
+        value: https://mylifeisboring.onrender.com
       - key: ADMIN_URL_SECRET
-        generateValue: true
+        value: x9_admin_portal_hidden
       - key: SESSION_TIMEOUT
         value: "86400"
-
-  - type: pserv
-    name: sidequest-db
-    env: postgres
-    plan: starter
-    postgresVersion: "15"
-    envVars:
-      - key: MYSQL_DATABASE
-        value: sidequest_app
-      - key: MYSQL_ROOT_PASSWORD
-        generateValue: true
-
-databases:
-  - name: sidequest-db
