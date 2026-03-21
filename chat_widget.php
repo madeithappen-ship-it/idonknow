@@ -226,6 +226,14 @@ function handleTyping() {
     }
 }
 
+function deleteChatMsg(id) {
+    if (!confirm('Permanently delete this message?')) return;
+    const fd = new FormData();
+    fd.append('action', 'delete_msg');
+    fd.append('msg_id', id);
+    fetch('chat_api.php', {method: 'POST', body: fd}).then(() => loadChatMessages());
+}
+
 function toggleChat() {
     _isChatOpen = !_isChatOpen;
     document.getElementById('chat-window').style.display = _isChatOpen ? 'flex' : 'none';
@@ -320,9 +328,11 @@ function loadChatMessages() {
             if (m.id > _lastChatMsgId) _lastChatMsgId = m.id;
             let isMine = (_isAdminChat && m.sender_type === 'admin') || (!_isAdminChat && m.sender_type === 'user');
             
+            let delBtn = _isAdminChat ? `<span style="font-size:10px; cursor:pointer; color:#888; margin: 0 5px;" title="Delete message" onclick="deleteChatMsg(${m.id})">🗑️</span>` : '';
+            
             let div = document.createElement('div');
             div.className = 'chat-msg ' + (isMine ? 'msg-mine' : 'msg-theirs');
-            div.innerHTML = linkifyText(m.message);
+            div.innerHTML = isMine ? delBtn + linkifyText(m.message) : linkifyText(m.message) + delBtn;
             body.appendChild(div);
         });
         

@@ -107,6 +107,14 @@ $users = $stmt->fetchAll();
 $stmt = $pdo->query("SELECT n.*, u.username as target_name FROM admin_notifications n LEFT JOIN users u ON n.target_user_id = u.id ORDER BY n.created_at DESC LIMIT 20");
 $admin_notifications = $stmt->fetchAll();
 
+// Fetch music
+$stmt = $pdo->query("SELECT * FROM site_music ORDER BY id DESC");
+$site_music = $stmt->fetchAll();
+
+// Fetch music
+$stmt = $pdo->query("SELECT * FROM site_music ORDER BY id DESC");
+$site_music = $stmt->fetchAll();
+
 // Fetch daily quest
 $stmt = $pdo->query("SELECT setting_value FROM global_settings WHERE setting_key = 'daily_quest'");
 $dq_setting = $stmt->fetch();
@@ -354,6 +362,7 @@ $token = csrf_token();
             <nav>
                 <a href="?token=<?php echo $url_secret; ?>&section=dashboard" class="<?= $section === 'dashboard' ? 'active' : '' ?>">Dashboard</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=notifications" class="<?= $section === 'notifications' ? 'active' : '' ?>">Notifications</a>
+                <a href="?token=<?php echo $url_secret; ?>&section=music" class="<?= $section === 'music' ? 'active' : '' ?>">Live Radio</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=submissions" class="<?= $section === 'submissions' ? 'active' : '' ?>">Submissions</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=quests" class="<?= $section === 'quests' ? 'active' : '' ?>">Manage Quests</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=users" class="<?= $section === 'users' ? 'active' : '' ?>">Users</a>
@@ -462,8 +471,55 @@ $token = csrf_token();
                 <?php endif; ?>
             </div>
             
-            <!-- Quests Section -->
-            <div id="quests" class="section <?= $section === 'quests' ? 'active' : '' ?>">
+        <!-- Radio Hub -->
+        <div id="music" class="section <?= $section === 'music' ? 'active' : '' ?>">
+            <h2>🎧 Dashboard Radio</h2>
+            
+            <div class="card" style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px;">Add YouTube Track</h3>
+                <form method="POST" action="manage_music.php" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
+                    <input type="hidden" name="action" value="add">
+                    <input type="text" name="title" required placeholder="Track Name / Artist" style="padding: 10px; flex: 1; min-width: 200px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px;">
+                    <input type="url" name="youtube_url" required placeholder="https://www.youtube.com/watch?v=..." style="padding: 10px; flex: 2; min-width: 300px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px;">
+                    <button type="submit" class="btn btn-primary">Add Track</button>
+                </form>
+            </div>
+            
+            <h3>Active Stations / Tracks</h3>
+            <table class="table" style="margin-top: 15px;">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>YouTube URL</th>
+                        <th>Added On</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($site_music)): ?>
+                    <tr><td colspan="4" style="text-align: center; color: #aaa; padding: 20px;">No tracks currently streaming on the Radio Hub.</td></tr>
+                    <?php else: foreach ($site_music as $audio): ?>
+                    <tr>
+                        <td><strong><?php echo escape($audio['title']); ?></strong></td>
+                        <td><a href="<?php echo escape($audio['youtube_url']); ?>" target="_blank" style="color: #64B5F6; text-decoration: underline;"><?php echo escape($audio['youtube_url']); ?></a></td>
+                        <td><?php echo date('M d, Y', strtotime($audio['created_at'])); ?></td>
+                        <td>
+                            <form method="POST" action="manage_music.php" onsubmit="return confirm('Permanently remove this track from the station?');" style="margin: 0;">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="id" value="<?php echo $audio['id']; ?>">
+                                <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <?php endforeach; endif; ?>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Quests Section -->
+        <div id="quests" class="section <?= $section === 'quests' ? 'active' : '' ?>">
                 <h2>Quest Management</h2>
                 
                 <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
@@ -591,8 +647,9 @@ $token = csrf_token();
                             <td>
                                 <?php if ($sub['verification_status'] === 'pending'): ?>
                                     <button class="btn btn-success btn-sm" onclick="approveSubmission(<?php echo $sub['id']; ?>)">Approve</button>
-                                    <button class="btn btn-danger btn-sm" onclick="rejectSubmission(<?php echo $sub['id']; ?>)">Reject</button>
+                                    <button class="btn btn-warning btn-sm" style="background:#ff9800; border-color:#ff9800; color:#fff;" onclick="rejectSubmission(<?php echo $sub['id']; ?>)">Reject</button>
                                 <?php endif; ?>
+                                <button class="btn btn-danger btn-sm" style="background:#cc0000; border-color:#cc0000;" onclick="deleteSubmission(<?php echo $sub['id']; ?>)">Delete</button>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -644,6 +701,19 @@ $token = csrf_token();
     </div>
 
     <script>
+        function deleteSubmission(id) {
+            if (confirm('Are you absolutely sure you want to permanently delete this submission?')) {
+                const fd = new FormData();
+                fd.append('id', id);
+                fetch('delete_submission.php', { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) location.reload();
+                        else alert('Error deleting submission');
+                    });
+            }
+        }
+        
         function approveSubmission(id) {
             if (confirm('Are you sure you want to approve this submission?')) {
                 fetch('approve.php', {

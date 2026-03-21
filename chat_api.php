@@ -30,6 +30,15 @@ if ($action === 'send') {
     exit;
 }
 
+if ($action === 'delete_msg' && $is_admin) {
+    $msg_id = (int)($_POST['msg_id'] ?? 0);
+    if ($msg_id) {
+        $pdo->prepare("DELETE FROM chat_messages WHERE id = ?")->execute([$msg_id]);
+    }
+    echo json_encode(['success' => true]);
+    exit;
+}
+
 if ($action === 'typing') {
     if ($is_admin) {
         $user_id = (int)$_POST['user_id'];

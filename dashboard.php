@@ -102,6 +102,14 @@ $stmt = $pdo->prepare("SELECT * FROM admin_notifications WHERE target_user_id IS
 $stmt->execute([$user_id]);
 $global_notifications = $stmt->fetchAll();
 
+// Fetch music
+$stmt = $pdo->query("SELECT * FROM site_music ORDER BY id DESC");
+$site_music = $stmt->fetchAll();
+
+// Fetch music
+$stmt = $pdo->query("SELECT * FROM site_music ORDER BY id DESC");
+$site_music = $stmt->fetchAll();
+
 $stmt = $pdo->prepare("SELECT MAX(id) as max_id, COUNT(id) as cnt FROM admin_notifications WHERE target_user_id IS NULL OR target_user_id = ?");
 $stmt->execute([$user_id]);
 $notif_stats = $stmt->fetch();
@@ -525,6 +533,26 @@ $token = csrf_token();
                 <div class="stat-label">Current Streak</div>
             </div>
         </div>
+        
+        <!-- Dashboard Radio -->
+        <?php if (!empty($site_music)): ?>
+        <div class="section" style="margin-bottom: 25px; padding: 20px; background: rgba(0,0,0,0.4); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            <h2 style="color: #64B5F6; margin-bottom: 15px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">🎧</span> Dashboard Radio
+            </h2>
+            <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.8);">
+                <iframe id="radioFrame" width="100%" height="220" src="https://www.youtube.com/embed/<?php echo $site_music[0]['video_id']; ?>?rel=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; border: 1px solid rgba(255,255,255,0.02);">
+                <div style="margin-bottom: 10px; color: #888; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; font-weight: bold;">Available Stations</div>
+                <?php foreach ($site_music as $idx => $trk): ?>
+                    <div style="padding: 8px 12px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-radius: 5px; cursor: pointer; transition: all 0.2s; font-size: 13px;" onmouseover="this.style.background='rgba(33, 150, 243, 0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'" onclick="document.getElementById('radioFrame').src='https://www.youtube.com/embed/<?php echo $trk['video_id']; ?>?autoplay=1&rel=0'">
+                        <span style="color: #64B5F6; margin-right: 8px;">▶</span> <?php echo escape($trk['title']); ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
         
         <!-- Global Notifications -->
         <?php foreach ($global_notifications as $note): ?>

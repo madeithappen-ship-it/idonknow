@@ -196,6 +196,7 @@ CREATE TABLE IF NOT EXISTS chat_typing (
 -- ========================================
 CREATE TABLE IF NOT EXISTS admin_notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    target_user_id INT NULL DEFAULT NULL,
     admin_id INT NOT NULL,
     type VARCHAR(100) NOT NULL,
     message TEXT NOT NULL,
@@ -204,6 +205,17 @@ CREATE TABLE IF NOT EXISTS admin_notifications (
     FOREIGN KEY (admin_id) REFERENCES admin_users(id) ON DELETE CASCADE,
     KEY idx_admin_notif_admin (admin_id),
     KEY idx_admin_notif_read (is_read)
+);
+
+-- ========================================
+-- Dashboard Radio Maps
+-- ========================================
+CREATE TABLE IF NOT EXISTS site_music (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    youtube_url VARCHAR(255) NOT NULL,
+    video_id VARCHAR(20) NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ========================================
