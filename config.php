@@ -195,7 +195,18 @@ function redirect($url, $message = null, $type = 'info') {
  * Escape output for HTML
  */
 function escape($text) {
-    return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8');
+}
+
+/**
+ * Escape text for HTML and automatically convert raw URLs to live, safe hyperlinks.
+ */
+function format_text($text) {
+    if (empty($text)) return '';
+    $escaped = escape($text);
+    $pattern = '/(https?:\/\/[^\s]+)/i';
+    $replacement = '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #64B5F6; text-decoration: underline; font-weight: bold;">$1</a>';
+    return nl2br(preg_replace($pattern, $replacement, $escaped));
 }
 
 /**

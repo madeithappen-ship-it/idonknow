@@ -184,7 +184,15 @@ let _lastChatMsgId = 0;
 let _isChatOpen = false;
 
 function escapeHtml(unsafe) {
-    return (unsafe||'').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return (unsafe||'').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function linkifyText(text) {
+    let safeText = escapeHtml(text);
+    const urlRegex = /(https?:\/\/[^\s"']+)/g;
+    return safeText.replace(urlRegex, function(url) {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #64B5F6; text-decoration: underline; font-weight: 600;">${url}</a>`;
+    });
 }
 
 function toggleChat() {
@@ -271,7 +279,7 @@ function loadChatMessages() {
             
             let div = document.createElement('div');
             div.className = 'chat-msg ' + (isMine ? 'msg-mine' : 'msg-theirs');
-            div.innerText = m.message;
+            div.innerHTML = linkifyText(m.message);
             body.appendChild(div);
         });
         
