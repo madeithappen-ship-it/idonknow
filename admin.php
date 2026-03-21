@@ -578,6 +578,21 @@ $token = csrf_token();
                 });
             }
         }
+
+        // Auto-refresh when new submissions arrive
+        let currentPendingCount = <?php echo isset($pending_submissions) ? (int)$pending_submissions : 0; ?>;
+        setInterval(() => {
+            fetch('check_pending.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.count > currentPendingCount) {
+                        location.reload();
+                    } else if (data.count !== undefined) {
+                        currentPendingCount = data.count; // Sync if it decreases
+                    }
+                })
+                .catch(e => console.error('Polling error:', e));
+        }, 5000);
     </script>
 </body>
 </html>
