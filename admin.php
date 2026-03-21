@@ -110,12 +110,42 @@ $admin_notes = $stmt->fetchAll();
 // Fetch daily quest
 $stmt = $pdo->query("SELECT setting_value FROM global_settings WHERE setting_key = 'daily_quest'");
 $dq_setting = $stmt->fetch();
-$current_dq = $dq_setting ? json_decode($dq_setting['setting_value'], true) : null;
-$dq_title = 'None';
-if ($current_dq && $current_dq['date'] === date('Y-m-d')) {
-    $stmt = $pdo->prepare("SELECT title FROM quests WHERE id = ?");
-    $stmt->execute([$current_dq['id']]);
-    $dq_title = $stmt->fetchColumn() ?: 'Unknown Quest';
+$dq_raw = $dq_setting ? json_decode($dq_setting['setting_value'], true) : null;
+
+$current_dq = null;
+if ($dq_raw) {
+    if (isset($dq_raw['id']) && !isset($dq_raw['global'])) {
+        $current_dq = ['global' => $dq_raw, 'users' => []];
+    } else {
+        $current_dq = $dq_raw;
+    }
+}
+
+$dq_global_title = 'None';
+$user_dq_list = [];
+
+if ($current_dq) {
+    if (isset($current_dq['global']) && $current_dq['global']['date'] === date('Y-m-d')) {
+        $stmt = $pdo->prepare("SELECT title FROM quests WHERE id = ?");
+        $stmt->execute([$current_dq['global']['id']]);
+        $dq_global_title = $stmt->fetchColumn() ?: 'Unknown Quest';
+    }
+    
+    if (!empty($current_dq['users'])) {
+        foreach ($current_dq['users'] as $uid => $qdata) {
+            if ($qdata['date'] === date('Y-m-d')) {
+                $stmt = $pdo->prepare("SELECT title FROM quests WHERE id = ?");
+                $stmt->execute([$qdata['id']]);
+                $qtitle = $stmt->fetchColumn() ?: 'Unknown';
+                
+                $stmt_u = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+                $stmt_u->execute([$uid]);
+                $uname = $stmt_u->fetchColumn() ?: "ID: $uid";
+                
+                $user_dq_list[] = "$uname -> $qtitle";
+            }
+        }
+    }
 }
 
 $token = csrf_token();
@@ -442,12 +472,18 @@ $token = csrf_token();
                 <h2>Quest Management</h2>
                 
                 <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
-                    <h3 style="color: #FFC107; margin-bottom: 10px;">🌟 Today's Daily Quest</h3>
-                    <p style="margin-bottom: 15px;">Current: <strong><?php echo escape($dq_title); ?></strong></p>
+                    <h3 style="color: #FFC107; margin-bottom: 10px;">🌟 Special Daily Quests</h3>
+                    <p style="margin-bottom: 5px;">Global Daily Quest: <strong><?php echo escape($dq_global_title); ?></strong></p>
+                    <?php if ($user_dq_list): ?>
+                        <p style="margin-bottom: 15px; font-size: 14px; color: #ffeb99;">Targeted users: <?php echo escape(implode(', ', $user_dq_list)); ?></p>
+                    <?php else: ?>
+                        <p style="margin-bottom: 15px; font-size: 14px; color: #aaa;">No specific users targeted today.</p>
+                    <?php endif; ?>
                     <form method="POST" action="manage_daily_quest.php" style="display: flex; gap: 10px;">
                         <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
-                        <input type="number" name="quest_id" required placeholder="Enter Quest ID" style="padding: 8px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; width: 150px;">
-                        <button type="submit" style="background: #FFC107; color: #000;">Set Daily Quest</button>
+                        <input type="number" name="quest_id" required placeholder="Quest ID" style="padding: 8px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; width: 100px;">
+                        <input type="text" name="target_user" placeholder="All Users (or username/ID)" style="padding: 8px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; width: 220px;">
+                        <button type="submit" style="background: #FFC107; color: #000;">Set Quest</button>
                     </form>
                 </div>
                 

@@ -16,9 +16,26 @@ $user_id = $user['id'];
 // Fetch Daily Quest Settings
 $stmt = $pdo->query("SELECT setting_value FROM global_settings WHERE setting_key = 'daily_quest'");
 $dq_setting = $stmt->fetch();
-$daily_quest_data = $dq_setting ? json_decode($dq_setting['setting_value'], true) : null;
+$dq_raw = $dq_setting ? json_decode($dq_setting['setting_value'], true) : null;
 $today = date('Y-m-d');
-$daily_quest_id = ($daily_quest_data && $daily_quest_data['date'] === $today) ? $daily_quest_data['id'] : null;
+
+$daily_quest_data = null;
+if ($dq_raw) {
+    if (isset($dq_raw['id']) && !isset($dq_raw['global'])) {
+        $daily_quest_data = ['global' => $dq_raw, 'users' => []];
+    } else {
+        $daily_quest_data = $dq_raw;
+    }
+}
+
+$daily_quest_id = null;
+if ($daily_quest_data) {
+    if (isset($daily_quest_data['users'][$user_id]) && $daily_quest_data['users'][$user_id]['date'] === $today) {
+        $daily_quest_id = $daily_quest_data['users'][$user_id]['id'];
+    } elseif (isset($daily_quest_data['global']) && $daily_quest_data['global']['date'] === $today) {
+        $daily_quest_id = $daily_quest_data['global']['id'];
+    }
+}
 
 $active_daily_quest = null;
 $available_daily_quest = null;
@@ -576,10 +593,10 @@ $token = csrf_token();
                     
                     <?php if ($quest['status'] === 'assigned' || $quest['status'] === 'in_progress'): ?>
                         <div class="upload-area" onclick="document.getElementById('proofInput_daily').click();">
-                            <input type="file" id="proofInput_daily" name="proof" accept="image/*,video/*" onchange="previewProof(event, 'daily')" style="display:none;">
                             <div>📸 Click or drag to upload daily proof</div>
                             <small style="color: #aaa;">Max 50MB, images or videos</small>
                         </div>
+                        <input type="file" id="proofInput_daily" name="proof" accept="image/*,video/*" onchange="previewProof(event, 'daily')" style="display:none;">
                         <div id="uploadPreview_daily" style="margin: 20px 0;"></div>
                         <button class="button" id="submitBtn_daily" style="background: #FFC107; color: #000;" onclick="submitProof(<?php echo $quest['user_quest_id']; ?>, 'daily')">Submit Daily Proof</button>
                     <?php elseif ($quest['status'] === 'submitted'): ?>
@@ -644,10 +661,10 @@ $token = csrf_token();
                         <div><strong>Status:</strong> In Progress - Submit your proof below</div>
                         
                         <div class="upload-area" onclick="document.getElementById('proofInput_regular').click();">
-                            <input type="file" id="proofInput_regular" name="proof" accept="image/*,video/*" onchange="previewProof(event, 'regular')" style="display:none;">
                             <div>📸 Click or drag to upload proof</div>
                             <small style="color: #aaa;">Max 50MB, images or videos (JPG, PNG, GIF, WebP, MP4, WebM)</small>
                         </div>
+                        <input type="file" id="proofInput_regular" name="proof" accept="image/*,video/*" onchange="previewProof(event, 'regular')" style="display:none;">
                         
                         <div id="uploadPreview_regular" style="margin: 20px 0;"></div>
                         <button class="button" id="submitBtn_regular" onclick="submitProof(<?php echo $current_quest['user_quest_id']; ?>, 'regular')">Submit Proof</button>
