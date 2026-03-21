@@ -249,6 +249,22 @@ CREATE TABLE IF NOT EXISTS solitaire_quests (
 );
 
 -- ========================================
+-- Cyber Hunt Spatial Maps
+-- ========================================
+CREATE TABLE IF NOT EXISTS user_hunt_saves (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    player_x FLOAT DEFAULT 1000,
+    player_y FLOAT DEFAULT 1000,
+    map_seed VARCHAR(50) DEFAULT 'cyber_01',
+    found_treasures JSON,
+    xp_earned INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ========================================
 -- Sample Super Admin (password: admin123 - CHANGE IN PRODUCTION)
 -- ========================================
 INSERT INTO admin_users (username, email, password, role, display_name, permissions) VALUES

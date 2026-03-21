@@ -516,3 +516,33 @@ function skipQuest() {
     isLocked = false;
     document.getElementById('quest-modal').style.display = 'none';
 }
+
+// Global hook allowing players to unstuck by pooling drawn items
+window.reshuffle = function() {
+    if (isLocked) return;
+    
+    if (piles.draw.length === 0 && piles.waste.length === 0) {
+        alert("No unused cards left to reshuffle in the top deck!");
+        return;
+    }
+    
+    // Evacuate array payloads
+    let combined = [];
+    while(piles.draw.length > 0) combined.push(piles.draw.pop());
+    while(piles.waste.length > 0) combined.push(piles.waste.pop());
+    
+    shuffle(combined);
+    
+    // Repopulate draw organically
+    for (let c of combined) {
+        c.faceUp = false;
+        piles.draw.push(c);
+    }
+    
+    moves += 50; // Penalty for reshuffling
+    document.getElementById('score-readout').innerText = `Score: ${score} | Moves: ${moves}`;
+    
+    // Deep map UI resync
+    restoreBoard();
+    saveState();
+};

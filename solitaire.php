@@ -8,9 +8,9 @@ if (!is_logged_in()) {
 $user = get_user();
 $user_id = $user['id'];
 
-// Lock to Level 10 or Admins
-if ($user['level'] < 10 && !is_admin()) {
-    $_SESSION['message'] = "🃏 Solitaire Quests unlock at Level 10!";
+// Lock to Level 5 or Admins
+if ($user['level'] < 5 && !is_admin()) {
+    $_SESSION['message'] = "🃏 Solitaire Quests unlock at Level 5!";
     $_SESSION['message_type'] = "error";
     redirect('dashboard.php');
 }
@@ -180,7 +180,10 @@ if ($user['level'] < 10 && !is_admin()) {
     <div class="navbar">
         <a href="dashboard.php">← Back to Dashboard</a>
         <div style="font-weight: bold; color: #f59e0b;">Solitaire Quests</div>
-        <div id="score-readout" style="font-size: 12px; color: #aaa;">Score: 0 | Moves: 0</div>
+        <div>
+            <button onclick="reshuffle()" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #f59e0b; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 15px; font-weight: bold; transition: 0.2s;">↻ Reshuffle (+50 Moves)</button>
+            <span id="score-readout" style="font-size: 14px; color: #aaa;">Score: 0 | Moves: 0</span>
+        </div>
     </div>
 
     <div id="game-board">

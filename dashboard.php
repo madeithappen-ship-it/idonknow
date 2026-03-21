@@ -664,17 +664,28 @@ $token = csrf_token();
         <?php endif; ?>
         
         <!-- Solitaire Minigame -->
-        <?php if ($user['level'] >= 10 || is_admin()): ?>
+        <?php if ($user['level'] >= 5 || is_admin()): ?>
         <div class="section" style="margin-bottom: 30px;">
             <div style="background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%); padding: 25px; border-radius: 12px; border: 2px solid rgba(16, 185, 129, 0.5); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,0,0,0.6); flex-wrap: wrap; gap: 15px;">
                 <div style="flex: 1; min-width: 250px;">
-                    <h2 style="color: #10b981; margin-bottom: 8px; font-size: 22px;">🃏 Solitaire Quests (New!)</h2>
+                    <h2 style="color: #10b981; margin-bottom: 8px; font-size: 22px;">🃏 Solitaire Quests</h2>
                     <p style="color: #a7f3d0; font-size: 15px;">Play classic Klondike Solitaire. Flip target cards to trigger real-life quests and unlock massive boosts!</p>
                 </div>
                 <a href="solitaire.php" class="button" style="background: #10b981; color: #fff; text-decoration: none; padding: 12px 25px; font-weight: bold; border-radius: 30px; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); white-space: nowrap;">Play Now</a>
             </div>
         </div>
         <?php endif; ?>
+
+        <!-- Cyber Hunt Minigame -->
+        <div class="section" style="margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #050510 0%, #0ff 100%); padding: 25px; border-radius: 12px; border: 2px solid #0ff; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,255,255,0.4); flex-wrap: wrap; gap: 15px;">
+                <div style="flex: 1; min-width: 250px;">
+                    <h2 style="color: #000; margin-bottom: 8px; font-size: 22px; text-shadow: 0 0 10px #fff;">🌐 Cyber Hunt (New!)</h2>
+                    <p style="color: #000; font-size: 15px; font-weight: bold;">Explore a massive virtual 2D cyberspace. Uncover hidden server anomolies using proximity sonar and extract rare physical XP payloads!</p>
+                </div>
+                <a href="hunt.php" class="button" style="background: #000; color: #0ff; text-decoration: none; padding: 12px 25px; font-weight: bold; border-radius: 30px; border: 2px solid #0ff; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8); white-space: nowrap;">Jack In</a>
+            </div>
+        </div>
 
         <!-- INSANE MODE UNLOCK -->
         <?php if ($user['level'] >= 10): ?>

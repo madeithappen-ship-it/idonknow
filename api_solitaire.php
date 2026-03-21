@@ -9,10 +9,10 @@ if (!is_logged_in()) {
 
 $user_id = $_SESSION['user_id'];
 
-// Lock to Level 10 or Admins
+// Lock to Level 5 or Admins
 $user = get_user($user_id);
-if (($user['level'] ?? 1) < 10 && !is_admin()) {
-    echo json_encode(['success' => false, 'error' => 'Unlock at Level 10']);
+if (($user['level'] ?? 1) < 5 && !is_admin()) {
+    echo json_encode(['success' => false, 'error' => 'Unlock at Level 5']);
     exit;
 }
 

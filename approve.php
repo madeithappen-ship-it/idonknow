@@ -91,7 +91,7 @@ function award_xp($user_id, $user_quest) {
     global $pdo;
     
     try {
-        $xp_earned = isset($user_quest['xp_reward']) ? (int)$user_quest['xp_reward'] : 10;
+        $xp_earned = 34; // 3 quests = 102 XP (over 100 threshold)
         
         $stmt = $pdo->prepare("
             UPDATE users SET xp = xp + ?, total_completed = total_completed + 1
@@ -99,12 +99,12 @@ function award_xp($user_id, $user_quest) {
         ");
         $stmt->execute([(int)$xp_earned, $user_id]);
         
-        // Check for level up (1 level every 3 completed quests)
-        $stmt = $pdo->prepare("SELECT total_completed, level FROM users WHERE id = ?");
+        // Check for level up (100 XP per level)
+        $stmt = $pdo->prepare("SELECT xp, total_completed, level FROM users WHERE id = ?");
         $stmt->execute([$user_id]);
         $user = $stmt->fetch();
         
-        $new_level = floor($user['total_completed'] / 3) + 1;
+        $new_level = floor($user['xp'] / 100) + 1;
         if ($new_level > $user['level']) {
             $stmt = $pdo->prepare("UPDATE users SET level = ? WHERE id = ?");
             $stmt->execute([$new_level, $user_id]);
