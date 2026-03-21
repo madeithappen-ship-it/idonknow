@@ -664,6 +664,7 @@ $token = csrf_token();
         <?php endif; ?>
         
         <!-- Solitaire Minigame -->
+        <?php if ($user['level'] >= 10 || is_admin()): ?>
         <div class="section" style="margin-bottom: 30px;">
             <div style="background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%); padding: 25px; border-radius: 12px; border: 2px solid rgba(16, 185, 129, 0.5); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,0,0,0.6); flex-wrap: wrap; gap: 15px;">
                 <div style="flex: 1; min-width: 250px;">
@@ -673,6 +674,7 @@ $token = csrf_token();
                 <a href="solitaire.php" class="button" style="background: #10b981; color: #fff; text-decoration: none; padding: 12px 25px; font-weight: bold; border-radius: 30px; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); white-space: nowrap;">Play Now</a>
             </div>
         </div>
+        <?php endif; ?>
 
         <!-- INSANE MODE UNLOCK -->
         <?php if ($user['level'] >= 10): ?>
