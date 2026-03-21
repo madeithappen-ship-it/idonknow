@@ -16,9 +16,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'add') {
         $message = trim($_POST['message'] ?? '');
+        $target_user = trim($_POST['target_user'] ?? '');
+        $target_user_id = null;
+        
+        if (!empty($target_user) && strtolower($target_user) !== 'all') {
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR id = ?");
+            $stmt->execute([$target_user, $target_user]);
+            $target_user_id = $stmt->fetchColumn() ?: null;
+            if (!$target_user_id) {
+                $_SESSION['message'] = "Target user not found!";
+                $_SESSION['message_type'] = "error";
+                header('Location: ' . $return_url);
+                exit;
+            }
+        }
+
         if ($message) {
-            $stmt = $pdo->prepare("INSERT INTO admin_notifications (message) VALUES (?)");
-            $stmt->execute([$message]);
+            $stmt = $pdo->prepare("INSERT INTO admin_notifications (target_user_id, message) VALUES (?, ?)");
+            $stmt->execute([$target_user_id, $message]);
             @log_audit('ADD_NOTIFICATION', 'system', $pdo->lastInsertId(), ['message' => substr($message, 0, 50)]);
         }
     } elseif ($action === 'delete') {

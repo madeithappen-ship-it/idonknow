@@ -98,10 +98,12 @@ $stmt->execute([$user_id]);
 $recent_submissions = $stmt->fetchAll();
 
 // Fetch active admin notifications
-$stmt = $pdo->query("SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT 5");
+$stmt = $pdo->prepare("SELECT * FROM admin_notifications WHERE target_user_id IS NULL OR target_user_id = ? ORDER BY created_at DESC LIMIT 5");
+$stmt->execute([$user_id]);
 $global_notifications = $stmt->fetchAll();
 
-$stmt = $pdo->query("SELECT MAX(id) as max_id, COUNT(id) as cnt FROM admin_notifications");
+$stmt = $pdo->prepare("SELECT MAX(id) as max_id, COUNT(id) as cnt FROM admin_notifications WHERE target_user_id IS NULL OR target_user_id = ?");
+$stmt->execute([$user_id]);
 $notif_stats = $stmt->fetch();
 $notif_max_id = $notif_stats['max_id'] ?? 0;
 $notif_count = $notif_stats['cnt'] ?? 0;
@@ -526,10 +528,13 @@ $token = csrf_token();
         
         <!-- Global Notifications -->
         <?php foreach ($global_notifications as $note): ?>
-            <div class="message message-info" style="background: rgba(33, 150, 243, 0.15); border: 1px solid rgba(33, 150, 243, 0.4); color: #fff; display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px; padding: 15px 20px;">
+            <?php $is_private = !empty($note['target_user_id']); ?>
+            <div class="message message-info" style="background: <?php echo $is_private ? 'rgba(156, 39, 176, 0.15)' : 'rgba(33, 150, 243, 0.15)'; ?>; border: 1px solid <?php echo $is_private ? 'rgba(156, 39, 176, 0.4)' : 'rgba(33, 150, 243, 0.4)'; ?>; color: #fff; display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px; padding: 15px 20px;">
                 <span style="font-size: 24px; margin-top: 2px;">📢</span>
                 <div>
-                    <strong style="color: #64B5F6; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Admin Announcement</strong>
+                    <strong style="color: <?php echo $is_private ? '#E1bee7' : '#64B5F6'; ?>; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <?php echo $is_private ? 'Private Message from Admin' : 'Admin Announcement'; ?>
+                    </strong>
                     <div style="margin-top: 8px; font-size: 16px; line-height: 1.5;">
                         <?php echo nl2br(escape($note['message'])); ?>
                     </div>

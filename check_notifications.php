@@ -6,10 +6,12 @@ if (!is_logged_in()) {
     exit;
 }
 
-$stmt = $pdo->query("SELECT MAX(id) as max_id FROM admin_notifications");
+$stmt = $pdo->prepare("SELECT MAX(id) as max_id FROM admin_notifications WHERE target_user_id IS NULL OR target_user_id = ?");
+$stmt->execute([$_SESSION['user_id']]);
 $max_id = $stmt->fetch()['max_id'] ?? 0;
 
-$stmt = $pdo->query("SELECT COUNT(id) as cnt FROM admin_notifications");
+$stmt = $pdo->prepare("SELECT COUNT(id) as cnt FROM admin_notifications WHERE target_user_id IS NULL OR target_user_id = ?");
+$stmt->execute([$_SESSION['user_id']]);
 $cnt = $stmt->fetch()['cnt'] ?? 0;
 
 header('Content-Type: application/json');

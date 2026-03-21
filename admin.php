@@ -104,8 +104,8 @@ $stmt->execute();
 $users = $stmt->fetchAll();
 
 // Fetch admin notifications
-$stmt = $pdo->query("SELECT * FROM admin_notifications ORDER BY created_at DESC");
-$admin_notes = $stmt->fetchAll();
+$stmt = $pdo->query("SELECT n.*, u.username as target_name FROM admin_notifications n LEFT JOIN users u ON n.target_user_id = u.id ORDER BY n.created_at DESC LIMIT 20");
+$admin_notifications = $stmt->fetchAll();
 
 // Fetch daily quest
 $stmt = $pdo->query("SELECT setting_value FROM global_settings WHERE setting_key = 'daily_quest'");
@@ -420,51 +420,46 @@ $token = csrf_token();
             <div id="notifications" class="section <?= $section === 'notifications' ? 'active' : '' ?>">
                 <h2>Global Notifications</h2>
                 
-                <form method="POST" action="manage_notifications.php" style="margin-bottom: 30px; background: #1a1a2e; padding: 20px; border-radius: 10px;">
-                    <h3 style="margin-bottom: 15px;">Send New Notification</h3>
-                    <input type="hidden" name="action" value="add">
-                    <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
-                    <input type="hidden" name="return_url" value="admin.php?token=<?php echo urlencode($url_secret); ?>&section=notifications">
-                    
-                    <div style="margin-bottom: 15px;">
-                        <textarea name="message" required rows="4" placeholder="Type your announcement here... It will appear at the top of the user's dashboard." style="width: 100%; padding: 12px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; font-family: inherit; resize: vertical;"></textarea>
-                    </div>
-                    
-                    <button type="submit">Broadcast Notification</button>
-                </form>
+                <div style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+                    <h3 style="color: #64B5F6; margin-bottom: 15px;">📢 Send Notification / Announcement</h3>
+                    <form method="POST" action="manage_notifications.php" style="display: flex; gap: 10px; flex-direction: column;">
+                        <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
+                        <input type="hidden" name="action" value="add">
+                        <textarea name="message" required placeholder="Type the announcement or direct message here..." style="padding: 10px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; resize: vertical; min-height: 80px;"></textarea>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" name="target_user" placeholder="All Users (or enter Username/ID for private message)" style="padding: 8px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; flex: 1;">
+                            <button type="submit" style="background: #2196F3; color: #fff; border: none; padding: 0 20px; border-radius: 6px; font-weight: bold; cursor: pointer;">Send Now</button>
+                        </div>
+                    </form>
+                </div>
                 
-                <h3>Active Notifications</h3>
-                <table class="table" style="margin-top: 15px;">
-                    <thead>
-                        <tr>
-                            <th>Message</th>
-                            <th>Posted On</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($admin_notes as $note): ?>
-                        <tr>
-                            <td style="max-width: 400px; line-height: 1.5;"><?php echo nl2br(escape($note['message'])); ?></td>
-                            <td><?php echo date('M d, H:i', strtotime($note['created_at'])); ?></td>
-                            <td>
-                                <form method="POST" action="manage_notifications.php" onsubmit="return confirm('Delete this notification?');" style="display:inline;">
+                <h3 style="margin-bottom: 15px;">Active Notifications</h3>
+                <?php if (empty($admin_notifications)): ?>
+                    <p style="color: #ccc;">No active notifications.</p>
+                <?php else: ?>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <?php foreach ($admin_notifications as $note): ?>
+                            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 6px; position: relative;">
+                                <div style="margin-bottom: 5px;">
+                                    <?php if ($note['target_user_id']): ?>
+                                        <span class="badge" style="background: #9c27b0; color: #fff; margin-right: 10px;">Private to: <?php echo escape($note['target_name'] ?? 'User '.$note['target_user_id']); ?></span>
+                                    <?php else: ?>
+                                        <span class="badge" style="background: #2196F3; color: #fff; margin-right: 10px;">Global</span>
+                                    <?php endif; ?>
+                                    <small style="color: #aaa;"><?php echo date('M d, g:i A', strtotime($note['created_at'])); ?></small>
+                                </div>
+                                <p><?php echo nl2br(escape($note['message'])); ?></p>
+                                <form method="POST" action="manage_notifications.php" style="position: absolute; top: 15px; right: 15px;" onsubmit="return confirm('Delete this notification?');">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo $note['id']; ?>">
                                     <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
                                     <input type="hidden" name="return_url" value="admin.php?token=<?php echo urlencode($url_secret); ?>&section=notifications">
                                     <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                                 </form>
-                            </td>
-                        </tr>
+                            </div>
                         <?php endforeach; ?>
-                        <?php if (empty($admin_notes)): ?>
-                        <tr>
-                            <td colspan="3" style="text-align: center; color: #aaa; padding: 30px;">No active notifications</td>
-                        </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                    </div>
+                <?php endif; ?>
             </div>
             
             <!-- Quests Section -->
