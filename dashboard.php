@@ -540,15 +540,17 @@ $token = csrf_token();
             <h2 style="color: #64B5F6; margin-bottom: 15px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 20px;">🎧</span> Feel The Vibe
             </h2>
-            <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.8); background: #000;">
-                <iframe id="radioFrame" width="100%" height="220" src="https://www.youtube-nocookie.com/embed/<?php echo $site_music[0]['video_id']; ?>?rel=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            </div>
-            <div style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; border: 1px solid rgba(255,255,255,0.02);">
-                <div style="margin-bottom: 10px; color: #888; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; font-weight: bold;">Available Stations</div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
                 <?php foreach ($site_music as $idx => $trk): ?>
-                    <div style="padding: 8px 12px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-radius: 5px; cursor: pointer; transition: all 0.2s; font-size: 13px;" onmouseover="this.style.background='rgba(33, 150, 243, 0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'" onclick="document.getElementById('radioFrame').src='https://www.youtube-nocookie.com/embed/<?php echo $trk['video_id']; ?>?autoplay=1&rel=0'">
-                        <span style="color: #64B5F6; margin-right: 8px;">▶</span> <?php echo escape($trk['title']); ?>
-                    </div>
+                    <a href="<?php echo escape($trk['youtube_url']); ?>" target="_blank" style="text-decoration: none;">
+                        <div style="padding: 12px 15px; background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px;" onmouseover="this.style.background='rgba(33, 150, 243, 0.2)'" onmouseout="this.style.background='rgba(33, 150, 243, 0.1)'">
+                            <span style="font-size: 24px;">🎵</span>
+                            <div>
+                                <div style="color: #fff; font-weight: bold; font-size: 14px;"><?php echo escape($trk['title']); ?></div>
+                                <div style="color: #64B5F6; font-size: 11px; margin-top: 4px;">Click to listen on YouTube ↗</div>
+                            </div>
+                        </div>
+                    </a>
                 <?php endforeach; ?>
             </div>
         </div>
