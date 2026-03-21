@@ -66,9 +66,9 @@ $app_config = [
     'app_name' => 'MyLifeIsBoringAndIWantToDoASideQuestButDontKnowWhatToDo',
     'app_url' => getenv('APP_URL') ?: 'http://localhost',
     'upload_dir' => __DIR__ . '/uploads/',
-    'max_upload_size' => 5 * 1024 * 1024, // 5MB
-    'allowed_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    'allowed_mimes' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+    'max_upload_size' => 50 * 1024 * 1024, // 50MB
+    'allowed_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov'],
+    'allowed_mimes' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'],
     'session_timeout' => 3600 * 24, // 24 hours
     'admin_url_secret' => getenv('ADMIN_URL_SECRET') ?: 'x9_admin_portal_hidden',
 ];

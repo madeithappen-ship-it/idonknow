@@ -57,10 +57,9 @@ $file = $_FILES['proof'];
 $max_size = config('max_upload_size');
 $allowed_mimes = config('allowed_mimes');
 
-// Validate file size
 if ($file['size'] > $max_size) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'File too large (max 5MB)']);
+    echo json_encode(['success' => false, 'error' => 'File too large (max 50MB)']);
     exit;
 }
 
@@ -71,16 +70,19 @@ finfo_close($finfo);
 
 if (!in_array($mime_type, $allowed_mimes)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Invalid file type (image only)']);
+    echo json_encode(['success' => false, 'error' => 'Invalid file type (images and videos only)']);
     exit;
 }
 
 // Validate image dimensions (prevent tiny images)
-$image_info = getimagesize($file['tmp_name']);
-if (!$image_info || $image_info[0] < 200 || $image_info[1] < 200) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Image too small (min 200x200px)']);
-    exit;
+$is_video = strpos($mime_type, 'video/') === 0;
+if (!$is_video) {
+    $image_info = @getimagesize($file['tmp_name']);
+    if (!$image_info || $image_info[0] < 200 || $image_info[1] < 200) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Image too small (min 200x200px)']);
+        exit;
+    }
 }
 
 // Generate secure filename
@@ -167,7 +169,7 @@ function auto_verify_submission($submission_id, $user_quest) {
         }
         
         // Check image dimensions
-        $image_info = getimagesize($submission['file_path']);
+        $image_info = @getimagesize($submission['file_path']);
         if ($image_info && $image_info[0] > 0 && $image_info[1] > 0) {
             $confidence += 0.1;
         }

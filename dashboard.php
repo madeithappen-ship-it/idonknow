@@ -489,9 +489,9 @@ $token = csrf_token();
                         <div><strong>Status:</strong> In Progress - Submit your proof below</div>
                         
                         <div class="upload-area" onclick="document.getElementById('proofInput').click();">
-                            <input type="file" id="proofInput" name="proof" accept="image/*">
+                            <input type="file" id="proofInput" name="proof" accept="image/*,video/*">
                             <div>📸 Click or drag to upload proof</div>
-                            <small style="color: #aaa;">Max 5MB, images only (JPG, PNG, GIF, WebP)</small>
+                            <small style="color: #aaa;">Max 50MB, images or videos (JPG, PNG, GIF, WebP, MP4, WebM)</small>
                         </div>
                         
                         <div id="uploadPreview" style="margin: 20px 0;"></div>
@@ -595,7 +595,11 @@ $token = csrf_token();
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const preview = document.getElementById('uploadPreview');
-                    preview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 300px; border-radius: 6px;">`;
+                    if (selectedFile.type.startsWith('video/')) {
+                        preview.innerHTML = `<video src="${event.target.result}" style="max-width: 100%; max-height: 300px; border-radius: 6px;" controls autoplay muted loop></video>`;
+                    } else {
+                        preview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 300px; border-radius: 6px;">`;
+                    }
                 };
                 reader.readAsDataURL(selectedFile);
             }
