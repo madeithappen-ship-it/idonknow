@@ -64,7 +64,7 @@ if ($section === 'quests' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($target_user_id) {
             // Assign instantly to the dashboard of the specific targeted player natively
-            $stmt = $pdo->prepare("INSERT INTO user_quests (user_id, quest_id, status) VALUES (?, ?, 'pending')");
+            $stmt = $pdo->prepare("INSERT INTO user_quests (user_id, quest_id, status) VALUES (?, ?, 'assigned')");
             $stmt->execute([$target_user_id, $new_quest_id]);
         }
         
