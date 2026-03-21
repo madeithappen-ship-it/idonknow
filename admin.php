@@ -72,6 +72,11 @@ if ($section === 'quests' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'title' => $_POST['title'],
             'difficulty' => $_POST['difficulty']
         ]);
+        
+        $_SESSION['message'] = "Targeted quest deployed successfully!";
+        $_SESSION['message_type'] = "success";
+        header("Location: admin.php?section=quests");
+        exit;
     }
 }
 
