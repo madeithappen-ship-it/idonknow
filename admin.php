@@ -448,7 +448,7 @@ $token = csrf_token();
                                     <?php endif; ?>
                                     <small style="color: #aaa;"><?php echo date('M d, g:i A', strtotime($note['created_at'])); ?></small>
                                 </div>
-                                <p><?php echo nl2br(escape($note['message'])); ?></p>
+                                <p><?php echo format_text($note['message']); ?></p>
                                 <form method="POST" action="manage_notifications.php" style="position: absolute; top: 15px; right: 15px;" onsubmit="return confirm('Delete this notification?');">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo $note['id']; ?>">

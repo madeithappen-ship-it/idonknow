@@ -536,7 +536,7 @@ $token = csrf_token();
                         <?php echo $is_private ? 'Private Message from Admin' : 'Admin Announcement'; ?>
                     </strong>
                     <div style="margin-top: 8px; font-size: 16px; line-height: 1.5;">
-                        <?php echo nl2br(escape($note['message'])); ?>
+                        <?php echo format_text($note['message']); ?>
                     </div>
                     <div style="font-size: 12px; color: #aaa; margin-top: 8px;">
                         Sent <?php echo date('M d, g:i A', strtotime($note['created_at'])); ?>
@@ -557,7 +557,7 @@ $token = csrf_token();
                         <span class="badge"><?php echo ucfirst($available_daily_quest['type']); ?></span>
                         <span class="xp-reward">+<?php echo $available_daily_quest['xp_reward']; ?> XP</span>
                     </div>
-                    <div class="quest-description"><?php echo nl2br(escape($available_daily_quest['description'])); ?></div>
+                    <div class="quest-description"><?php echo format_text($available_daily_quest['description']); ?></div>
                     <button class="button" style="background: #FFC107; color: #000;" onclick="acceptDailyQuest(<?php echo $available_daily_quest['id']; ?>)">Accept Daily Quest</button>
                 </div>
             <?php else: ?>
@@ -569,7 +569,7 @@ $token = csrf_token();
                         <span class="badge"><?php echo ucfirst($quest['type']); ?></span>
                         <span class="xp-reward">+<?php echo $quest['xp_reward']; ?> XP</span>
                     </div>
-                    <div class="quest-description"><?php echo nl2br(escape($quest['description'])); ?></div>
+                    <div class="quest-description"><?php echo format_text($quest['description']); ?></div>
                     
                     <?php
                         $dq_reject_reason = '';
@@ -634,7 +634,7 @@ $token = csrf_token();
                     </div>
                     
                     <div class="quest-description">
-                        <?php echo nl2br(escape($current_quest['description'])); ?>
+                        <?php echo format_text($current_quest['description']); ?>
                     </div>
                     
                     <?php
