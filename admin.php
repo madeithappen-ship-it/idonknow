@@ -29,9 +29,25 @@ if ($section === 'quests' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $quest_action = $_POST['quest_action'] ?? '';
     
     if ($quest_action === 'add' && verify_csrf($_POST['csrf_token'] ?? '')) {
+        $target_input = trim($_POST['target_user'] ?? '');
+        $target_user_id = null;
+        $is_active = 1;
+
+        if (!empty($target_input)) {
+            if (is_numeric($target_input)) {
+                $stmt = $pdo->prepare("SELECT id FROM users WHERE id = ?");
+                $stmt->execute([$target_input]);
+            } else {
+                $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
+                $stmt->execute([$target_input]);
+            }
+            $target_user_id = $stmt->fetchColumn();
+            if ($target_user_id) $is_active = 0; // Hide targeted quests from public pool randomly assigned by get_quest
+        }
+
         $stmt = $pdo->prepare("
             INSERT INTO quests (title, description, difficulty, type, xp_reward, keywords, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, 1)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
         
         $stmt->execute([
@@ -40,10 +56,19 @@ if ($section === 'quests' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['difficulty'],
             $_POST['type'],
             (int)$_POST['xp_reward'],
-            $_POST['keywords'] ?? ''
+            $_POST['keywords'] ?? '',
+            $is_active
         ]);
         
-        log_audit('ADD_QUEST', 'quest', $pdo->lastInsertId(), [
+        $new_quest_id = $pdo->lastInsertId();
+
+        if ($target_user_id) {
+            // Assign instantly to the dashboard of the specific targeted player natively
+            $stmt = $pdo->prepare("INSERT INTO user_quests (user_id, quest_id, status) VALUES (?, ?, 'pending')");
+            $stmt->execute([$target_user_id, $new_quest_id]);
+        }
+        
+        log_audit('ADD_QUEST', 'quest', $new_quest_id, [
             'title' => $_POST['title'],
             'difficulty' => $_POST['difficulty']
         ]);
@@ -595,6 +620,12 @@ $token = csrf_token();
                     <div style="margin-bottom: 15px;">
                         <label>Keywords (comma separated)</label>
                         <input type="text" name="keywords" placeholder="proof, screenshot, selfie, etc." style="width: 100%; padding: 8px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px;">
+                    </div>
+
+                    <div style="margin-bottom: 25px; padding: 15px; border: 1px dashed #f0f; border-radius: 8px; background: rgba(255, 0, 255, 0.05);">
+                        <label style="color: #f0f; font-weight: bold;">SPECIAL TARGET ASSIGNMENT (Optional)</label>
+                        <p style="font-size: 13px; color: #aaa; margin: 5px 0 10px 0;">Enter a specific Username or User ID. If filled, this quest will bypass the random pool and instantly appear ONLY on that user's dashboard!</p>
+                        <input type="text" name="target_user" placeholder="Target Username or ID" style="width: 100%; padding: 8px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px;">
                     </div>
                     
                     <button type="submit">Add Quest</button>
