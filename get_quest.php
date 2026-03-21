@@ -159,26 +159,3 @@ if ($new_quest) {
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'No quests available']);
 }
-include "config.php";
-
-$user_id = $_SESSION['user_id'];
-
-$query = "
-SELECT * FROM quests 
-WHERE id NOT IN (
-    SELECT quest_id FROM user_quests WHERE user_id=?
-)
-ORDER BY RAND() LIMIT 1
-";
-
-$stmt = $conn->prepare($query);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$quest = $result->fetch_assoc();
-
-$stmt2 = $conn->prepare("INSERT INTO user_quests (user_id, quest_id) VALUES (?,?)");
-$stmt2->bind_param("ii", $user_id, $quest['id']);
-$stmt2->execute();
-
-echo json_encode($quest);

@@ -501,6 +501,18 @@ $token = csrf_token();
                         <div style="padding: 15px; background: rgba(255, 193, 7, 0.2); border-radius: 6px; margin-top: 15px;">
                             ⏳ <strong>Pending Verification</strong> - Your proof is being reviewed by moderators
                         </div>
+                        <script>
+                            setInterval(() => {
+                                fetch('check_status.php')
+                                    .then(r => r.json())
+                                    .then(data => {
+                                        if (data.status && data.status !== 'submitted') {
+                                            location.reload();
+                                        }
+                                    })
+                                    .catch(e => console.error(e));
+                            }, 5000);
+                        </script>
                         
                     <?php endif; ?>
                 </div>
@@ -641,6 +653,12 @@ $token = csrf_token();
                     btn.disabled = false;
                     btn.innerHTML = 'Get New Quest';
                 }
+            })
+            .catch(err => {
+                console.error('Quest finding error:', err);
+                alert('Error: Unable to find a quest right now. Please try again.');
+                btn.disabled = false;
+                btn.innerHTML = 'Get New Quest';
             });
         }
     </script>
