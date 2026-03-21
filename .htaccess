@@ -27,9 +27,3 @@ Options -Indexes
     Order allow,deny
     Deny from all
 </FilesMatch>
-
-# Protect upload directory (prevent execution)
-<Directory "uploads">
-    php_flag engine off
-    AddType text/plain .php .phtml .php3 .php4 .php5 .phps
-</Directory>
