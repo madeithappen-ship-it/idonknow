@@ -99,11 +99,8 @@ try {
     $pdo->query("SELECT 1");
     
 } catch (PDOException $e) {
-    // Always show database errors for debugging
-    die("Database Connection Error: " . $e->getMessage() . "\n" .
-        "Host: " . $db_config['host'] . "\n" .
-        "User: " . $db_config['user'] . "\n" .
-        "Database: " . $db_config['name'] . "\n");
+    error_log("Database Connection Error: " . $e->getMessage());
+    die("Database connection failed. Please try again later.");
 }
 
 // ========================================
