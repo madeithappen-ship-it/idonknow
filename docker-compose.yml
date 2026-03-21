@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASS: sidequest_password
+      DB_NAME: sidequest_app
+      APP_ENV: development
+      DEVELOPMENT_MODE: "true"
+      ADMIN_URL_SECRET: x9_admin_portal_hidden
+      APP_URL: http://localhost:8000
+    volumes:
+      - .:/var/www/html
+      - ./uploads:/var/www/html/uploads
+      - ./logs:/var/www/html/logs
+    depends_on:
+      - db
+    networks:
+      - sidequest-net
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: sidequest_password
+      MYSQL_DATABASE: sidequest_app
+      MYSQL_USER: sidequest
+      MYSQL_PASSWORD: sidequest_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - sidequest-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+volumes:
+  db_data:
+
+networks:
+  sidequest-net:

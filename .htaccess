@@ -1,0 +1,35 @@
+# Apache .htaccess Configuration
+# Enables clean URLs and security headers
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Remove .php extension
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^([a-zA-Z0-9_-]+)/?$ $1.php [L]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^(config|\.env|schema|auth|generate)\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect upload directory (prevent execution)
+<Directory "uploads">
+    php_flag engine off
+    AddType text/plain .php .phtml .php3 .php4 .php5 .phps
+</Directory>

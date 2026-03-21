@@ -1,0 +1,25 @@
+# Git Ignore Configuration
+.env
+.env.local
+.env.*.local
+*.log
+logs/
+uploads/proofs/
+uploads/*.jpg
+uploads/*.png
+uploads/*.gif
+uploads/*.webp
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+node_modules/
+vendor/
+.composer.lock
+*.sql.bak
+.cache/
+temp/
+tmp/
