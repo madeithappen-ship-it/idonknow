@@ -85,7 +85,7 @@ CREATE TABLE user_quests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     quest_id INT NOT NULL,
-    status ENUM('assigned', 'in_progress', 'submitted', 'approved', 'rejected', 'expired') DEFAULT 'assigned',
+    status ENUM('assigned', 'in_progress', 'submitted', 'approved', 'rejected', 'expired', 'skipped') DEFAULT 'assigned',
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP NULL,
     submission_id INT NULL,
