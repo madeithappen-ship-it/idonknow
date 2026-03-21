@@ -4,7 +4,6 @@ services:
     env: php
     plan: starter
     buildCommand: |
-      composer install --no-dev
       mkdir -p logs
       mkdir -p uploads/proofs
       chmod 755 logs
