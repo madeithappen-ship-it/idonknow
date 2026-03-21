@@ -537,20 +537,21 @@ $token = csrf_token();
         <!-- Feel The Vibe -->
         <?php if (!empty($site_music)): ?>
         <div class="section" style="margin-bottom: 25px; padding: 20px; background: rgba(0,0,0,0.4); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+        <!-- Feel The Vibe -->
+        <?php if (!empty($site_music)): ?>
+        <div class="section" style="margin-bottom: 25px; padding: 20px; background: rgba(0,0,0,0.4); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             <h2 style="color: #64B5F6; margin-bottom: 15px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 20px;">🎧</span> Feel The Vibe
             </h2>
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <?php foreach ($site_music as $idx => $trk): ?>
-                    <a href="<?php echo escape($trk['youtube_url']); ?>" target="_blank" style="text-decoration: none;">
-                        <div style="padding: 12px 15px; background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px;" onmouseover="this.style.background='rgba(33, 150, 243, 0.2)'" onmouseout="this.style.background='rgba(33, 150, 243, 0.1)'">
-                            <span style="font-size: 24px;">🎵</span>
-                            <div>
-                                <div style="color: #fff; font-weight: bold; font-size: 14px;"><?php echo escape($trk['title']); ?></div>
-                                <div style="color: #64B5F6; font-size: 11px; margin-top: 4px;">Click to listen on YouTube ↗</div>
-                            </div>
+                    <div onclick="playRadio('<?php echo escape($trk['video_id']); ?>', '<?php echo escape(addslashes($trk['title'])); ?>')" style="padding: 12px 15px; background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px;" onmouseover="this.style.background='rgba(33, 150, 243, 0.2)'" onmouseout="this.style.background='rgba(33, 150, 243, 0.1)'">
+                        <span style="font-size: 24px;">🎵</span>
+                        <div>
+                            <div style="color: #fff; font-weight: bold; font-size: 14px;"><?php echo escape($trk['title']); ?></div>
+                            <div style="color: #888; font-size: 11px; margin-top: 4px;">Click to play in pop-out player ↗</div>
                         </div>
-                    </a>
+                    </div>
                 <?php endforeach; ?>
             </div>
         </div>
