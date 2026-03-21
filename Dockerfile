@@ -5,8 +5,8 @@ WORKDIR /var/www/html
 
 # Install PHP extensions
 RUN apt-get update && apt-get install -y \
-    mysql-client \
-    && docker-php-ext-install pdo pdo_mysql \
+    postgresql-client \
+    && docker-php-ext-install pdo pdo_pgsql \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Enable Apache modules
