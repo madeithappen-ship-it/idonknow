@@ -563,9 +563,11 @@ $token = csrf_token();
                     <strong style="color: <?php echo $is_private ? '#E1bee7' : '#64B5F6'; ?>; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
                         <?php echo $is_private ? 'Private Message from Admin' : 'Admin Announcement'; ?>
                     </strong>
+                    <?php if (!empty(trim($note['message']))): ?>
                     <div style="margin-top: 8px; font-size: 16px; line-height: 1.5;">
                         <?php echo format_text($note['message']); ?>
                     </div>
+                    <?php endif; ?>
                     <?php if (!empty($note['image_path'])): ?>
                         <div style="margin-top: 15px;">
                             <img src="<?php echo escape($note['image_path']); ?>" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.5);" alt="Notification Attachment">

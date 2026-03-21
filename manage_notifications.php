@@ -31,26 +31,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        if ($message || (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK)) {
+        $hasImage = isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE;
+        if ($message !== '' || $hasImage) {
             $image_path = null;
-            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-                $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-                $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                if (in_array(strtolower($ext), $allowed)) {
-                    if (!is_dir(__DIR__ . '/uploads/notifications')) {
-                        mkdir(__DIR__ . '/uploads/notifications', 0755, true);
+            if ($hasImage) {
+                if ($_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                    $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+                    $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                    if (in_array(strtolower($ext), $allowed)) {
+                        if (!is_dir(__DIR__ . '/uploads/notifications')) {
+                            mkdir(__DIR__ . '/uploads/notifications', 0755, true);
+                        }
+                        $filename = 'notif_' . time() . '_' . uniqid() . '.' . $ext;
+                        $target = 'uploads/notifications/' . $filename;
+                        if (move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/' . $target)) {
+                            $image_path = $target;
+                        } else {
+                            $_SESSION['message'] = "File upload failed to save to disk. Check folder permissions.";
+                            $_SESSION['message_type'] = "error";
+                            header('Location: ' . $return_url);
+                            exit;
+                        }
+                    } else {
+                        $_SESSION['message'] = "Invalid file type. Only JPG, PNG, GIF, WEBP allowed.";
+                        $_SESSION['message_type'] = "error";
+                        header('Location: ' . $return_url);
+                        exit;
                     }
-                    $filename = 'notif_' . time() . '_' . uniqid() . '.' . $ext;
-                    $target = 'uploads/notifications/' . $filename;
-                    if (move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/' . $target)) {
-                        $image_path = $target;
-                    }
+                } else {
+                    $_SESSION['message'] = "Image upload error code: " . $_FILES['image']['error'] . " (Image matches server limit constraints?)";
+                    $_SESSION['message_type'] = "error";
+                    header('Location: ' . $return_url);
+                    exit;
                 }
             }
 
             $stmt = $pdo->prepare("INSERT INTO admin_notifications (target_user_id, message, image_path) VALUES (?, ?, ?)");
             $stmt->execute([$target_user_id, $message, $image_path]);
-            @log_audit('ADD_NOTIFICATION', 'system', $pdo->lastInsertId(), ['message' => substr($message, 0, 50)]);
+            @log_audit('ADD_NOTIFICATION', 'system', $pdo->lastInsertId(), ['message' => substr($message ?: 'Image Attachment Only', 0, 50)]);
+            
+        } else {
+            $_SESSION['message'] = "You must provide a text message or attach an image!";
+            $_SESSION['message_type'] = "error";
+            header('Location: ' . $return_url);
+            exit;
         }
     } elseif ($action === 'delete') {
         $id = (int)($_POST['id'] ?? 0);
