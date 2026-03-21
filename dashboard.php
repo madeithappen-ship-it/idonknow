@@ -905,5 +905,7 @@ $token = csrf_token();
                 .catch(e => console.error(e));
         }, 5000);
     </script>
+    
+    <?php require_once(__DIR__ . '/chat_widget.php'); ?>
 </body>
 </html>

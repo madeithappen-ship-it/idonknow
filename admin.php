@@ -619,6 +619,7 @@ $token = csrf_token();
                             <th>Total Completed</th>
                             <th>Status</th>
                             <th>Joined</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -630,8 +631,15 @@ $token = csrf_token();
                             <td><?php echo $u['level']; ?></td>
                             <td><?php echo $u['xp']; ?></td>
                             <td><?php echo $u['total_completed']; ?></td>
-                            <td><?php echo escape($u['status']); ?></td>
+                            <td>
+                                <span class="badge <?php echo $u['status'] === 'active' ? 'badge-active' : 'badge-inactive'; ?>">
+                                    <?php echo ucfirst($u['status']); ?>
+                                </span>
+                            </td>
                             <td><?php echo date('M d, Y', strtotime($u['created_at'])); ?></td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="startAdminChat(<?php echo $u['id']; ?>, '<?php echo escape(addslashes($u['username'])); ?>')">Chat</button>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -705,7 +713,9 @@ $token = csrf_token();
                     }
                 })
                 .catch(e => console.error('Polling error:', e));
-        }, 5000);
+        }, 10000);
     </script>
+    
+    <?php require_once(__DIR__ . '/chat_widget.php'); ?>
 </body>
 </html>
