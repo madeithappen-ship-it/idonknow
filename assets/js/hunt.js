@@ -67,13 +67,20 @@ function buildWorld() {
         });
     }
     
-    // Generate Treasures
-    for(let i=0; i < 20; i++) {
+    // Generate 40 Dynamic Treasures (Reward, Quest, Trap, Rare)
+    for(let i=0; i < 40; i++) {
+        let rand = seedRand();
+        let tType = 'quest';
+        if (rand > 0.9) tType = 'rare';       // 10%
+        else if (rand > 0.7) tType = 'trap';  // 20%
+        else if (rand > 0.4) tType = 'reward';// 30%
+        else tType = 'quest';                 // 40%
+        
         treasures.push({
             id: `tsr_${i}`,
             x: seedRand() * WORLD_SIZE,
             y: seedRand() * WORLD_SIZE,
-            type: seedRand() > 0.8 ? 'rare' : 'quest',
+            type: tType,
             radius: 10
         });
     }
@@ -294,7 +301,13 @@ function draw() {
         if (dist < 150) {
             ctx.beginPath();
             ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
-            ctx.fillStyle = t.type === 'rare' ? '#f59e0b' : '#f0f';
+            
+            let tColor = '#f0f'; // Default Quest
+            if (t.type === 'rare') tColor = '#f59e0b';
+            else if (t.type === 'trap') tColor = '#ef4444';
+            else if (t.type === 'reward') tColor = '#10b981';
+            
+            ctx.fillStyle = tColor;
             ctx.fill();
             // Glow
             ctx.shadowBlur = 20;
@@ -383,6 +396,19 @@ let activeUserQuestId = null;
 let activeTreasureId = null;
 
 function triggerQuestSequence(treasureObj) {
+    if (treasureObj.type === 'trap') {
+        alert("💀 CRITICAL SYSTEM ERROR! TRAP TRIGGERED! You lost 50 XP!");
+        foundTreasures.push(treasureObj.id);
+        saveState();
+        return;
+    }
+    if (treasureObj.type === 'reward') {
+        alert("🎁 PURE CACHE LOCATED! You gained 50 XP instantly!");
+        foundTreasures.push(treasureObj.id);
+        saveState();
+        return;
+    }
+
     isLocked = true;
     activeTreasureId = treasureObj.id;
     
