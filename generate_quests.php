@@ -9,6 +9,10 @@
 
 require_once(__DIR__ . '/config.php');
 
+// Debug
+echo "DB Host: " . getenv('DB_HOST') . "\n";
+echo "DB Name: " . getenv('DB_NAME') . "\n";
+
 // Quest templates
 $quest_templates = [
     // Truth Quests
@@ -174,7 +178,7 @@ try {
     
     $stmt = $pdo->prepare("
         INSERT INTO quests (title, description, difficulty, type, xp_reward, is_active)
-        VALUES (?, ?, ?, ?, ?, 1)
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
     
     $count = 0;
@@ -184,7 +188,8 @@ try {
             $quest['description'] ?? $quest['title'],
             $quest['difficulty'],
             $quest['type'],
-            $quest['xp_reward'],
+            $quest['xp_reward'] ?? 10,
+            true  // is_active
         ]);
         
         $count++;
@@ -201,44 +206,3 @@ try {
     echo "Error: " . $e->getMessage() . "\n";
     exit(1);
 }
-$conn = new mysqli("localhost", "root", "", "sidequest_app");
-
-$difficulties = ['easy','medium','hard','insane'];
-$types = ['truth','dare','social','dark'];
-
-$templates = [
-    "Text a random number and say '%s'",
-    "Ask a stranger '%s'",
-    "Post on your status: '%s'",
-    "Call a friend and say '%s'",
-    "Do something weird like '%s'",
-];
-
-$phrases = [
-    "how was your day?",
-    "I think I saw you in a dream",
-    "do you believe in aliens?",
-    "today feels illegal",
-    "you are chosen",
-    "life is a simulation",
-    "I forgot who I am",
-    "this is not a normal message",
-    "you seem important",
-    "something feels off today"
-];
-
-for ($i = 0; $i < 10000; $i++) {
-    $template = $templates[array_rand($templates)];
-    $phrase = $phrases[array_rand($phrases)];
-
-    $title = "Quest #" . ($i + 1);
-    $description = sprintf($template, $phrase);
-    $difficulty = $difficulties[array_rand($difficulties)];
-    $type = $types[array_rand($types)];
-
-    $stmt = $conn->prepare("INSERT INTO quests (title, description, difficulty, type) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $title, $description, $difficulty, $type);
-    $stmt->execute();
-}
-
-echo "10,000 quests generated!";

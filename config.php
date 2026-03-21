@@ -8,6 +8,32 @@
  */
 
 // ========================================
+// Load .env file
+// ========================================
+$envFile = __DIR__ . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        // Skip comments
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+        // Parse KEY=VALUE
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+            // Remove quotes if present
+            if ((strpos($value, '"') === 0 && strrpos($value, '"') === strlen($value) - 1) ||
+                (strpos($value, "'") === 0 && strrpos($value, "'") === strlen($value) - 1)) {
+                $value = substr($value, 1, -1);
+            }
+            putenv("$key=$value");
+        }
+    }
+}
+
+// ========================================
 // Error Handling & Development Mode
 // ========================================
 error_reporting(E_ALL);
@@ -73,12 +99,11 @@ try {
     $pdo->query("SELECT 1");
     
 } catch (PDOException $e) {
-    if ($isDevelopment) {
-        die("Database Connection Error: " . $e->getMessage());
-    } else {
-        error_log("Database Connection Error: " . $e->getMessage());
-        die("Database connection failed. Please try again later.");
-    }
+    // Always show database errors for debugging
+    die("Database Connection Error: " . $e->getMessage() . "\n" .
+        "Host: " . $db_config['host'] . "\n" .
+        "User: " . $db_config['user'] . "\n" .
+        "Database: " . $db_config['name'] . "\n");
 }
 
 // ========================================
