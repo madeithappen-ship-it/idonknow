@@ -107,6 +107,17 @@ $users = $stmt->fetchAll();
 $stmt = $pdo->query("SELECT * FROM admin_notifications ORDER BY created_at DESC");
 $admin_notes = $stmt->fetchAll();
 
+// Fetch daily quest
+$stmt = $pdo->query("SELECT setting_value FROM global_settings WHERE setting_key = 'daily_quest'");
+$dq_setting = $stmt->fetch();
+$current_dq = $dq_setting ? json_decode($dq_setting['setting_value'], true) : null;
+$dq_title = 'None';
+if ($current_dq && $current_dq['date'] === date('Y-m-d')) {
+    $stmt = $pdo->prepare("SELECT title FROM quests WHERE id = ?");
+    $stmt->execute([$current_dq['id']]);
+    $dq_title = $stmt->fetchColumn() ?: 'Unknown Quest';
+}
+
 $token = csrf_token();
 ?>
 <!DOCTYPE html>
@@ -429,6 +440,16 @@ $token = csrf_token();
             <!-- Quests Section -->
             <div id="quests" class="section <?= $section === 'quests' ? 'active' : '' ?>">
                 <h2>Quest Management</h2>
+                
+                <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+                    <h3 style="color: #FFC107; margin-bottom: 10px;">🌟 Today's Daily Quest</h3>
+                    <p style="margin-bottom: 15px;">Current: <strong><?php echo escape($dq_title); ?></strong></p>
+                    <form method="POST" action="manage_daily_quest.php" style="display: flex; gap: 10px;">
+                        <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
+                        <input type="number" name="quest_id" required placeholder="Enter Quest ID" style="padding: 8px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; width: 150px;">
+                        <button type="submit" style="background: #FFC107; color: #000;">Set Daily Quest</button>
+                    </form>
+                </div>
                 
                 <form method="POST" style="margin-bottom: 30px; background: #1a1a2e; padding: 20px; border-radius: 10px;">
                     <h3 style="margin-bottom: 15px;">Add New Quest</h3>

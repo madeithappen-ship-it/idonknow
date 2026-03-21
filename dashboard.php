@@ -13,15 +13,48 @@ if (!is_logged_in()) {
 $user = get_user();
 $user_id = $user['id'];
 
-// Get current quest
-$stmt = $pdo->prepare("
+// Fetch Daily Quest Settings
+$stmt = $pdo->query("SELECT setting_value FROM global_settings WHERE setting_key = 'daily_quest'");
+$dq_setting = $stmt->fetch();
+$daily_quest_data = $dq_setting ? json_decode($dq_setting['setting_value'], true) : null;
+$today = date('Y-m-d');
+$daily_quest_id = ($daily_quest_data && $daily_quest_data['date'] === $today) ? $daily_quest_data['id'] : null;
+
+$active_daily_quest = null;
+$available_daily_quest = null;
+
+if ($daily_quest_id) {
+    $stmt = $pdo->prepare("
+        SELECT uq.id as user_quest_id, uq.status, q.* FROM user_quests uq
+        JOIN quests q ON uq.quest_id = q.id
+        WHERE uq.user_id = ? AND uq.quest_id = ? AND DATE(uq.assigned_at) = ?
+        ORDER BY uq.assigned_at DESC LIMIT 1
+    ");
+    $stmt->execute([$user_id, $daily_quest_id, $today]);
+    $active_daily_quest = $stmt->fetch();
+    
+    if (!$active_daily_quest) {
+        $stmt = $pdo->prepare("SELECT * FROM quests WHERE id = ?");
+        $stmt->execute([$daily_quest_id]);
+        $available_daily_quest = $stmt->fetch();
+    }
+}
+
+// Get current regular quest
+$query = "
     SELECT uq.id as user_quest_id, uq.status, q.* FROM user_quests uq
     JOIN quests q ON uq.quest_id = q.id
     WHERE uq.user_id = ? AND uq.status IN ('assigned', 'in_progress', 'submitted')
-    ORDER BY uq.assigned_at DESC
-    LIMIT 1
-");
-$stmt->execute([$user_id]);
+";
+$params = [$user_id];
+if ($daily_quest_id) {
+    $query .= " AND uq.quest_id != ?";
+    $params[] = $daily_quest_id;
+}
+$query .= " ORDER BY uq.assigned_at DESC LIMIT 1";
+
+$stmt = $pdo->prepare($query);
+$stmt->execute($params);
 $current_quest = $stmt->fetch();
 
 // Get top users for leaderboard
@@ -490,6 +523,50 @@ $token = csrf_token();
             </div>
         <?php endforeach; ?>
         
+        <!-- Daily Quest Section -->
+        <?php if ($available_daily_quest || $active_daily_quest): ?>
+        <div class="section">
+            <h2 style="color: #FFC107;">🌟 Today's Daily Quest</h2>
+            <?php if ($available_daily_quest): ?>
+                <div class="card" style="border-color: rgba(255, 193, 7, 0.5); box-shadow: 0 0 20px rgba(255, 193, 7, 0.1);">
+                    <h3 class="quest-title" style="color: #FFC107;"><?php echo escape($available_daily_quest['title']); ?></h3>
+                    <div class="quest-meta">
+                        <span class="badge badge-<?php echo $available_daily_quest['difficulty']; ?>"><?php echo ucfirst($available_daily_quest['difficulty']); ?></span>
+                        <span class="badge"><?php echo ucfirst($available_daily_quest['type']); ?></span>
+                        <span class="xp-reward">+<?php echo $available_daily_quest['xp_reward']; ?> XP</span>
+                    </div>
+                    <div class="quest-description"><?php echo nl2br(escape($available_daily_quest['description'])); ?></div>
+                    <button class="button" style="background: #FFC107; color: #000;" onclick="acceptDailyQuest(<?php echo $available_daily_quest['id']; ?>)">Accept Daily Quest</button>
+                </div>
+            <?php else: ?>
+                <?php $quest = $active_daily_quest; ?>
+                <div class="card" style="border-color: rgba(255, 193, 7, 0.5); box-shadow: 0 0 20px rgba(255, 193, 7, 0.1);">
+                    <h3 class="quest-title" style="color: #FFC107;"><?php echo escape($quest['title']); ?></h3>
+                    <div class="quest-meta">
+                        <span class="badge badge-<?php echo $quest['difficulty']; ?>"><?php echo ucfirst($quest['difficulty']); ?></span>
+                        <span class="badge"><?php echo ucfirst($quest['type']); ?></span>
+                        <span class="xp-reward">+<?php echo $quest['xp_reward']; ?> XP</span>
+                    </div>
+                    <div class="quest-description"><?php echo nl2br(escape($quest['description'])); ?></div>
+                    
+                    <?php if ($quest['status'] === 'assigned' || $quest['status'] === 'in_progress'): ?>
+                        <div class="upload-area" onclick="document.getElementById('proofInput_daily').click();">
+                            <input type="file" id="proofInput_daily" name="proof" accept="image/*,video/*" onchange="previewProof(event, 'daily')" style="display:none;">
+                            <div>📸 Click or drag to upload daily proof</div>
+                            <small style="color: #aaa;">Max 50MB, images or videos</small>
+                        </div>
+                        <div id="uploadPreview_daily" style="margin: 20px 0;"></div>
+                        <button class="button" id="submitBtn_daily" style="background: #FFC107; color: #000;" onclick="submitProof(<?php echo $quest['user_quest_id']; ?>, 'daily')">Submit Daily Proof</button>
+                    <?php elseif ($quest['status'] === 'submitted'): ?>
+                        <div style="padding: 15px; background: rgba(255, 193, 7, 0.2); border-radius: 6px;">⏳ <strong>Pending Verification</strong></div>
+                    <?php elseif ($quest['status'] === 'approved'): ?>
+                        <div style="padding: 15px; background: rgba(76, 175, 80, 0.2); border-radius: 6px; color: #99ff99;">✅ <strong>Completed!</strong></div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+        
         <!-- Current Quest Section -->
         <div class="section">
             <h2>🎯 Your Current Quest</h2>
@@ -516,14 +593,14 @@ $token = csrf_token();
                     <?php if ($current_quest['status'] === 'assigned' || $current_quest['status'] === 'in_progress'): ?>
                         <div><strong>Status:</strong> In Progress - Submit your proof below</div>
                         
-                        <div class="upload-area" onclick="document.getElementById('proofInput').click();">
-                            <input type="file" id="proofInput" name="proof" accept="image/*,video/*">
+                        <div class="upload-area" onclick="document.getElementById('proofInput_regular').click();">
+                            <input type="file" id="proofInput_regular" name="proof" accept="image/*,video/*" onchange="previewProof(event, 'regular')" style="display:none;">
                             <div>📸 Click or drag to upload proof</div>
                             <small style="color: #aaa;">Max 50MB, images or videos (JPG, PNG, GIF, WebP, MP4, WebM)</small>
                         </div>
                         
-                        <div id="uploadPreview" style="margin: 20px 0;"></div>
-                        <button class="button" id="submitBtn" onclick="submitProof(<?php echo $current_quest['user_quest_id']; ?>)">Submit Proof</button>
+                        <div id="uploadPreview_regular" style="margin: 20px 0;"></div>
+                        <button class="button" id="submitBtn_regular" onclick="submitProof(<?php echo $current_quest['user_quest_id']; ?>, 'regular')">Submit Proof</button>
                         
                     <?php elseif ($current_quest['status'] === 'submitted'): ?>
                         <div style="padding: 15px; background: rgba(255, 193, 7, 0.2); border-radius: 6px; margin-top: 15px;">
@@ -632,33 +709,41 @@ $token = csrf_token();
     </div>
     
     <script>
-        let selectedFile = null;
+        function acceptDailyQuest(id) {
+            const fd = new FormData();
+            fd.append('quest_id', id);
+            fd.append('csrf_token', '<?php echo escape($token); ?>');
+            fetch('assign_daily_quest.php', {method:'POST', body:fd})
+                .then(r=>r.json()).then(d=>{if(d.success)location.reload();else alert('Failed to accept');});
+        }
+
+        let selectedFiles = {};
         
-        document.getElementById('proofInput')?.addEventListener('change', function(e) {
-            selectedFile = e.target.files[0];
-            
-            if (selectedFile) {
-                const preview = document.getElementById('uploadPreview');
-                const objectUrl = URL.createObjectURL(selectedFile);
-                if (selectedFile.type.startsWith('video/')) {
-                    preview.innerHTML = `<video src="${objectUrl}" style="max-width: 100%; max-height: 300px; border-radius: 6px;" controls autoplay muted loop></video>`;
+        function previewProof(e, type) {
+            selectedFiles[type] = e.target.files[0];
+            if (selectedFiles[type]) {
+                const preview = document.getElementById('uploadPreview_' + type);
+                const url = URL.createObjectURL(selectedFiles[type]);
+                if (selectedFiles[type].type.startsWith('video/')) {
+                    preview.innerHTML = `<video src="${url}" style="max-width: 100%; max-height: 300px; border-radius: 6px;" controls autoplay muted loop></video>`;
                 } else {
-                    preview.innerHTML = `<img src="${objectUrl}" style="max-width: 100%; max-height: 300px; border-radius: 6px;">`;
+                    preview.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 300px; border-radius: 6px;">`;
                 }
             }
-        });
+        }
         
-        function submitProof(questId) {
-            if (!selectedFile) {
-                alert('Please select an image first');
+        function submitProof(questId, type) {
+            if (!selectedFiles[type]) {
+                alert('Please select an image or video first');
                 return;
             }
             
             const formData = new FormData();
-            formData.append('proof', selectedFile);
+            formData.append('proof', selectedFiles[type]);
             formData.append('user_quest_id', questId);
             
-            const btn = document.getElementById('submitBtn');
+            const btn = document.getElementById('submitBtn_' + type);
+            const ogText = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<span class="loading"></span> Uploading...';
             
@@ -674,14 +759,14 @@ $token = csrf_token();
                 } else {
                     alert('Error: ' + (data.error || 'Submission failed'));
                     btn.disabled = false;
-                    btn.innerHTML = 'Submit Proof';
+                    btn.innerHTML = ogText;
                 }
             })
             .catch(err => {
                 console.error('Submission error:', err);
                 alert('Error: unable to submit proof right now. Please try again.');
                 btn.disabled = false;
-                btn.innerHTML = 'Submit Proof';
+                btn.innerHTML = ogText;
             });
         }
         

@@ -4,6 +4,7 @@
 -- ========================================
 
 -- Drop existing tables in correct dependency order
+DROP TABLE IF EXISTS global_settings;
 DROP TABLE IF EXISTS admin_notifications;
 DROP TABLE IF EXISTS audit_log;
 DROP TABLE IF EXISTS submissions;
