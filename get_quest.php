@@ -29,8 +29,10 @@ $stmt = $pdo->prepare("
 $stmt->execute([$user_id]);
 $current_quest = $stmt->fetch();
 
-// If user has a current quest, return it
-if ($current_quest) {
+$force_insane = isset($_GET['force_insane']) && $_GET['force_insane'] === 'true';
+
+// If user has a current quest, return it (unless forcing an insane mode background ping)
+if ($current_quest && !$force_insane) {
     header('Content-Type: application/json');
     echo json_encode([
         'success' => true,
@@ -63,14 +65,19 @@ $user_level = $user['level'] ?? 1;
 
 // Difficulty weights based on level
 $difficulty_weights = [];
-if ($user_level < 5) {
-    $difficulty_weights = ['easy' => 50, 'medium' => 30, 'hard' => 15, 'insane' => 5];
-} elseif ($user_level < 10) {
-    $difficulty_weights = ['easy' => 20, 'medium' => 50, 'hard' => 25, 'insane' => 5];
-} elseif ($user_level < 20) {
-    $difficulty_weights = ['easy' => 10, 'medium' => 30, 'hard' => 50, 'insane' => 10];
+
+if ($force_insane && $user_level >= 10) {
+    $difficulty_weights = ['insane' => 100];
 } else {
-    $difficulty_weights = ['easy' => 5, 'medium' => 15, 'hard' => 30, 'insane' => 50];
+    if ($user_level < 5) {
+        $difficulty_weights = ['easy' => 50, 'medium' => 30, 'hard' => 15, 'insane' => 5];
+    } elseif ($user_level < 10) {
+        $difficulty_weights = ['easy' => 20, 'medium' => 50, 'hard' => 25, 'insane' => 5];
+    } elseif ($user_level < 20) {
+        $difficulty_weights = ['easy' => 10, 'medium' => 30, 'hard' => 50, 'insane' => 10];
+    } else {
+        $difficulty_weights = ['easy' => 5, 'medium' => 15, 'hard' => 30, 'insane' => 50];
+    }
 }
 
 // Pick difficulty based on weights

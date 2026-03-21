@@ -116,6 +116,20 @@ $notif_stats = $stmt->fetch();
 $notif_max_id = $notif_stats['max_id'] ?? 0;
 $notif_count = $notif_stats['cnt'] ?? 0;
 
+// Calculate Rare Badges (Completed Insane Quests)
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) as insane_completed FROM user_quests uq 
+    JOIN quests q ON uq.quest_id = q.id 
+    WHERE uq.user_id = ? AND q.difficulty = 'insane' AND uq.status = 'approved'
+");
+$stmt->execute([$user_id]);
+$insane_count = $stmt->fetchColumn() ?: 0;
+$rare_badges = [];
+if ($insane_count >= 1) $rare_badges[] = '☠️ Insanity Initiate';
+if ($insane_count >= 5) $rare_badges[] = '👹 Abyss Walker';
+if ($insane_count >= 10) $rare_badges[] = '🔥 True Chaos';
+if ($insane_count >= 25) $rare_badges[] = '👑 Lord of the Edge';
+
 $message = $_SESSION['message'] ?? '';
 $message_type = $_SESSION['message_type'] ?? 'info';
 if (isset($_SESSION['message'])) {
@@ -649,6 +663,39 @@ $token = csrf_token();
         </div>
         <?php endif; ?>
         
+        <!-- Solitaire Minigame -->
+        <div class="section" style="margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%); padding: 25px; border-radius: 12px; border: 2px solid rgba(16, 185, 129, 0.5); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,0,0,0.6); flex-wrap: wrap; gap: 15px;">
+                <div style="flex: 1; min-width: 250px;">
+                    <h2 style="color: #10b981; margin-bottom: 8px; font-size: 22px;">🃏 Solitaire Quests (New!)</h2>
+                    <p style="color: #a7f3d0; font-size: 15px;">Play classic Klondike Solitaire. Flip target cards to trigger real-life quests and unlock massive boosts!</p>
+                </div>
+                <a href="solitaire.php" class="button" style="background: #10b981; color: #fff; text-decoration: none; padding: 12px 25px; font-weight: bold; border-radius: 30px; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); white-space: nowrap;">Play Now</a>
+            </div>
+        </div>
+
+        <!-- INSANE MODE UNLOCK -->
+        <?php if ($user['level'] >= 10): ?>
+        <div class="section" style="margin-bottom: 30px; animation: pulseRed 2s infinite;">
+            <style>
+                @keyframes pulseRed { 0% {box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);} 50% {box-shadow: 0 0 35px rgba(239, 68, 68, 0.6);} 100% {box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);} }
+            </style>
+            <div style="background: #450a0a; padding: 25px; border-radius: 12px; border: 2px solid #ef4444; text-align: center;">
+                <h2 style="color: #fca5a5; font-size: 24px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px;">🔥 Insane Mode Unlocked 🔥</h2>
+                <p style="color: #f87171; font-size: 16px; margin-bottom: 20px;">You've reached Level 10. The abyss stares back. Are you ready for extreme challenges and exclusive Rare Badges?</p>
+                <button onclick="summonInsaneQuest()" class="button" style="background: #dc2626; color: #fff; font-weight: bold; font-size: 18px; padding: 15px 40px; border: 1px solid #fecaca; text-transform: uppercase;">Summon Insane Quest</button>
+            </div>
+        </div>
+        <script>
+            function summonInsaneQuest() {
+                if(!confirm("WARNING: Insane quests are extreme. Are you absolutely sure you want to summon one?")) return;
+                fetch('get_quest.php?force_insane=true').then(r => r.json()).then(data => {
+                    if (data.success) location.reload(); else alert(data.error || 'Failed to summon quest');
+                });
+            }
+        </script>
+        <?php endif; ?>
+
         <!-- Current Quest Section -->
         <div class="section">
             <h2>🎯 Your Current Quest</h2>

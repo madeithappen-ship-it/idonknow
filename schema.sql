@@ -219,6 +219,36 @@ CREATE TABLE IF NOT EXISTS site_music (
 );
 
 -- ========================================
+-- Solitaire Game States
+-- ========================================
+CREATE TABLE IF NOT EXISTS user_solitaire (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    game_mode VARCHAR(50) DEFAULT 'classic',
+    state_json LONGTEXT NULL,
+    xp_earned INT DEFAULT 0,
+    status ENUM('playing', 'won', 'lost') DEFAULT 'playing',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS solitaire_quests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    game_id INT NOT NULL,
+    quest_id INT NOT NULL,
+    card_identifier VARCHAR(10) NOT NULL,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    proof_url VARCHAR(255) NULL,
+    reward_granted TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (game_id) REFERENCES user_solitaire(id) ON DELETE CASCADE,
+    FOREIGN KEY (quest_id) REFERENCES quests(id) ON DELETE CASCADE
+);
+
+-- ========================================
 -- Sample Super Admin (password: admin123 - CHANGE IN PRODUCTION)
 -- ========================================
 INSERT INTO admin_users (username, email, password, role, display_name, permissions) VALUES
