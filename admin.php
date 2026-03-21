@@ -103,6 +103,10 @@ $stmt = $pdo->prepare("SELECT id, username, email, level, xp, total_completed, s
 $stmt->execute();
 $users = $stmt->fetchAll();
 
+// Fetch admin notifications
+$stmt = $pdo->query("SELECT * FROM admin_notifications ORDER BY created_at DESC");
+$admin_notes = $stmt->fetchAll();
+
 $token = csrf_token();
 ?>
 <!DOCTYPE html>
@@ -308,6 +312,7 @@ $token = csrf_token();
             <h2>Admin Panel</h2>
             <nav>
                 <a href="?token=<?php echo $url_secret; ?>&section=dashboard" class="<?= $section === 'dashboard' ? 'active' : '' ?>">Dashboard</a>
+                <a href="?token=<?php echo $url_secret; ?>&section=notifications" class="<?= $section === 'notifications' ? 'active' : '' ?>">Notifications</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=submissions" class="<?= $section === 'submissions' ? 'active' : '' ?>">Submissions</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=quests" class="<?= $section === 'quests' ? 'active' : '' ?>">Manage Quests</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=users" class="<?= $section === 'users' ? 'active' : '' ?>">Users</a>
@@ -366,6 +371,57 @@ $token = csrf_token();
                             </td>
                         </tr>
                         <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Notifications Section -->
+            <div id="notifications" class="section <?= $section === 'notifications' ? 'active' : '' ?>">
+                <h2>Global Notifications</h2>
+                
+                <form method="POST" action="manage_notifications.php" style="margin-bottom: 30px; background: #1a1a2e; padding: 20px; border-radius: 10px;">
+                    <h3 style="margin-bottom: 15px;">Send New Notification</h3>
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
+                    <input type="hidden" name="return_url" value="admin.php?token=<?php echo urlencode($url_secret); ?>&section=notifications">
+                    
+                    <div style="margin-bottom: 15px;">
+                        <textarea name="message" required rows="4" placeholder="Type your announcement here... It will appear at the top of the user's dashboard." style="width: 100%; padding: 12px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+                    
+                    <button type="submit">Broadcast Notification</button>
+                </form>
+                
+                <h3>Active Notifications</h3>
+                <table class="table" style="margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th>Message</th>
+                            <th>Posted On</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($admin_notes as $note): ?>
+                        <tr>
+                            <td style="max-width: 400px; line-height: 1.5;"><?php echo nl2br(escape($note['message'])); ?></td>
+                            <td><?php echo date('M d, H:i', strtotime($note['created_at'])); ?></td>
+                            <td>
+                                <form method="POST" action="manage_notifications.php" onsubmit="return confirm('Delete this notification?');" style="display:inline;">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="id" value="<?php echo $note['id']; ?>">
+                                    <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
+                                    <input type="hidden" name="return_url" value="admin.php?token=<?php echo urlencode($url_secret); ?>&section=notifications">
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php if (empty($admin_notes)): ?>
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #aaa; padding: 30px;">No active notifications</td>
+                        </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>

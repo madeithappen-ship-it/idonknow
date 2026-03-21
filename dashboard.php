@@ -47,6 +47,10 @@ $stmt = $pdo->prepare("
 $stmt->execute([$user_id]);
 $recent_submissions = $stmt->fetchAll();
 
+// Fetch active admin notifications
+$stmt = $pdo->query("SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT 5");
+$global_notifications = $stmt->fetchAll();
+
 $message = $_SESSION['message'] ?? '';
 $message_type = $_SESSION['message_type'] ?? 'info';
 if (isset($_SESSION['message'])) {
@@ -464,6 +468,22 @@ $token = csrf_token();
                 <div class="stat-label">Current Streak</div>
             </div>
         </div>
+        
+        <!-- Global Notifications -->
+        <?php foreach ($global_notifications as $note): ?>
+            <div class="message message-info" style="background: rgba(33, 150, 243, 0.15); border: 1px solid rgba(33, 150, 243, 0.4); color: #fff; display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px; padding: 15px 20px;">
+                <span style="font-size: 24px; margin-top: 2px;">📢</span>
+                <div>
+                    <strong style="color: #64B5F6; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Admin Announcement</strong>
+                    <div style="margin-top: 8px; font-size: 16px; line-height: 1.5;">
+                        <?php echo nl2br(escape($note['message'])); ?>
+                    </div>
+                    <div style="font-size: 12px; color: #aaa; margin-top: 8px;">
+                        Sent <?php echo date('M d, g:i A', strtotime($note['created_at'])); ?>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
         
         <!-- Current Quest Section -->
         <div class="section">
