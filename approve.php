@@ -59,7 +59,12 @@ try {
     $stmt->execute([$submission['user_quest_id']]);
     
     // Award XP
-    $stmt = $pdo->prepare("SELECT * FROM user_quests WHERE id = ?");
+    $stmt = $pdo->prepare("
+        SELECT uq.*, q.xp_reward 
+        FROM user_quests uq
+        JOIN quests q ON uq.quest_id = q.id 
+        WHERE uq.id = ?
+    ");
     $stmt->execute([$submission['user_quest_id']]);
     $user_quest = $stmt->fetch();
     
@@ -86,7 +91,7 @@ function award_xp($user_id, $user_quest) {
     global $pdo;
     
     try {
-        $xp_earned = $user_quest['xp_reward'] * $user_quest['difficulty_multiplier'];
+        $xp_earned = isset($user_quest['xp_reward']) ? (int)$user_quest['xp_reward'] : 10;
         
         $stmt = $pdo->prepare("
             UPDATE users SET xp = xp + ?, total_completed = total_completed + 1

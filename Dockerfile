@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_mysql \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Increase PHP upload limits for videos
+RUN echo "upload_max_filesize = 50M\npost_max_size = 50M\nmemory_limit = 256M\n" > /usr/local/etc/php/conf.d/uploads.ini
+
 # Enable Apache modules
 RUN a2enmod rewrite headers
 

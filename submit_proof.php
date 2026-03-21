@@ -201,7 +201,7 @@ function award_xp($user_id, $user_quest) {
     global $pdo;
     
     try {
-        $xp_earned = $user_quest['xp_reward'] * $user_quest['difficulty_multiplier'];
+        $xp_earned = isset($user_quest['xp_reward']) ? (int)$user_quest['xp_reward'] : 10;
         
         $stmt = $pdo->prepare("
             UPDATE users SET xp = xp + ?, total_completed = total_completed + 1
