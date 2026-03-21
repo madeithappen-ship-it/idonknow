@@ -362,7 +362,7 @@ $token = csrf_token();
             <nav>
                 <a href="?token=<?php echo $url_secret; ?>&section=dashboard" class="<?= $section === 'dashboard' ? 'active' : '' ?>">Dashboard</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=notifications" class="<?= $section === 'notifications' ? 'active' : '' ?>">Notifications</a>
-                <a href="?token=<?php echo $url_secret; ?>&section=music" class="<?= $section === 'music' ? 'active' : '' ?>">Live Radio</a>
+                <a href="?token=<?php echo $url_secret; ?>&section=music" class="<?= $section === 'music' ? 'active' : '' ?>">Feel The Vibe</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=submissions" class="<?= $section === 'submissions' ? 'active' : '' ?>">Submissions</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=quests" class="<?= $section === 'quests' ? 'active' : '' ?>">Manage Quests</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=users" class="<?= $section === 'users' ? 'active' : '' ?>">Users</a>
@@ -473,7 +473,7 @@ $token = csrf_token();
             
         <!-- Radio Hub -->
         <div id="music" class="section <?= $section === 'music' ? 'active' : '' ?>">
-            <h2>🎧 Dashboard Radio</h2>
+            <h2>🎧 Feel The Vibe</h2>
             
             <div class="card" style="margin-bottom: 30px;">
                 <h3 style="margin-bottom: 15px;">Add YouTube Track</h3>
@@ -498,7 +498,7 @@ $token = csrf_token();
                 </thead>
                 <tbody>
                     <?php if (empty($site_music)): ?>
-                    <tr><td colspan="4" style="text-align: center; color: #aaa; padding: 20px;">No tracks currently streaming on the Radio Hub.</td></tr>
+                    <tr><td colspan="4" style="text-align: center; color: #aaa; padding: 20px;">No tracks currently streaming on Feel The Vibe.</td></tr>
                     <?php else: foreach ($site_music as $audio): ?>
                     <tr>
                         <td><strong><?php echo escape($audio['title']); ?></strong></td>

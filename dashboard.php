@@ -534,11 +534,11 @@ $token = csrf_token();
             </div>
         </div>
         
-        <!-- Dashboard Radio -->
+        <!-- Feel The Vibe -->
         <?php if (!empty($site_music)): ?>
         <div class="section" style="margin-bottom: 25px; padding: 20px; background: rgba(0,0,0,0.4); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             <h2 style="color: #64B5F6; margin-bottom: 15px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">🎧</span> Dashboard Radio
+                <span style="font-size: 20px;">🎧</span> Feel The Vibe
             </h2>
             <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 0 10px rgba(0,0,0,0.8);">
                 <iframe id="radioFrame" width="100%" height="220" src="https://www.youtube.com/embed/<?php echo $site_music[0]['video_id']; ?>?rel=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
