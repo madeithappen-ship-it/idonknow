@@ -50,9 +50,8 @@ if (!$is_video) {
     $height = $image_info[1] ?? 600;
 }
 
-// Create a data URL for the image
-$image_data = base64_encode(file_get_contents($file_path));
-$data_url = 'data:' . $submission['mime_type'] . ';base64,' . $image_data;
+// Access the file securely through direct URL
+$file_url = 'uploads/proofs/' . rawurlencode($submission['file_name']);
 
 ?>
 <!DOCTYPE html>
@@ -170,9 +169,9 @@ $data_url = 'data:' . $submission['mime_type'] . ';base64,' . $image_data;
     <div class="content">
         <div class="proof-container">
             <?php if ($is_video): ?>
-                <video src="<?php echo $data_url; ?>" controls autoplay loop style="max-width: 100%; max-height: 800px; border-radius: 8px;"></video>
+                <video src="<?php echo htmlspecialchars($file_url); ?>" controls autoplay loop style="max-width: 100%; max-height: 800px; border-radius: 8px;"></video>
             <?php else: ?>
-                <img src="<?php echo $data_url; ?>" alt="Proof submission" class="proof-image" style="max-width: <?php echo min($width, 800); ?>px; max-height: <?php echo min($height, 600); ?>px;">
+                <img src="<?php echo htmlspecialchars($file_url); ?>" alt="Proof submission" class="proof-image" style="max-width: <?php echo min($width, 800); ?>px; max-height: <?php echo min($height, 600); ?>px;">
             <?php endif; ?>
             
             <div class="actions">

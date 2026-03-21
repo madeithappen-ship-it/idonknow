@@ -592,16 +592,13 @@ $token = csrf_token();
             selectedFile = e.target.files[0];
             
             if (selectedFile) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const preview = document.getElementById('uploadPreview');
-                    if (selectedFile.type.startsWith('video/')) {
-                        preview.innerHTML = `<video src="${event.target.result}" style="max-width: 100%; max-height: 300px; border-radius: 6px;" controls autoplay muted loop></video>`;
-                    } else {
-                        preview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 300px; border-radius: 6px;">`;
-                    }
-                };
-                reader.readAsDataURL(selectedFile);
+                const preview = document.getElementById('uploadPreview');
+                const objectUrl = URL.createObjectURL(selectedFile);
+                if (selectedFile.type.startsWith('video/')) {
+                    preview.innerHTML = `<video src="${objectUrl}" style="max-width: 100%; max-height: 300px; border-radius: 6px;" controls autoplay muted loop></video>`;
+                } else {
+                    preview.innerHTML = `<img src="${objectUrl}" style="max-width: 100%; max-height: 300px; border-radius: 6px;">`;
+                }
             }
         });
         
