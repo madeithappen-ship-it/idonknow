@@ -42,7 +42,7 @@ $available_daily_quest = null;
 
 if ($daily_quest_id) {
     $stmt = $pdo->prepare("
-        SELECT uq.id as user_quest_id, uq.status, q.* FROM user_quests uq
+        SELECT uq.id as user_quest_id, uq.status, uq.submission_id, uq.attempts, q.* FROM user_quests uq
         JOIN quests q ON uq.quest_id = q.id
         WHERE uq.user_id = ? AND uq.quest_id = ? AND DATE(uq.assigned_at) = ?
         ORDER BY uq.assigned_at DESC LIMIT 1
@@ -59,7 +59,7 @@ if ($daily_quest_id) {
 
 // Get current regular quest
 $query = "
-    SELECT uq.id as user_quest_id, uq.status, q.* FROM user_quests uq
+    SELECT uq.id as user_quest_id, uq.status, uq.submission_id, uq.attempts, q.* FROM user_quests uq
     JOIN quests q ON uq.quest_id = q.id
     WHERE uq.user_id = ? AND uq.status IN ('assigned', 'in_progress', 'submitted')
 ";
