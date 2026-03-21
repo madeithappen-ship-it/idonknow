@@ -6,6 +6,7 @@ WORKDIR /var/www/html
 # Install PHP extensions
 RUN apt-get update && apt-get install -y \
     default-mysql-client \
+    ca-certificates \
     && docker-php-ext-install pdo pdo_mysql \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
