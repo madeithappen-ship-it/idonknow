@@ -51,6 +51,11 @@ $recent_submissions = $stmt->fetchAll();
 $stmt = $pdo->query("SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT 5");
 $global_notifications = $stmt->fetchAll();
 
+$stmt = $pdo->query("SELECT MAX(id) as max_id, COUNT(id) as cnt FROM admin_notifications");
+$notif_stats = $stmt->fetch();
+$notif_max_id = $notif_stats['max_id'] ?? 0;
+$notif_count = $notif_stats['cnt'] ?? 0;
+
 $message = $_SESSION['message'] ?? '';
 $message_type = $_SESSION['message_type'] ?? 'info';
 if (isset($_SESSION['message'])) {
@@ -491,7 +496,10 @@ $token = csrf_token();
             
             <?php if ($current_quest): ?>
                 <div class="card quest-card">
-                    <h3 class="quest-title"><?php echo escape($current_quest['title']); ?></h3>
+                    <h3 class="quest-title">
+                        <?php echo escape($current_quest['title']); ?>
+                        <button onclick="skipQuest(<?php echo $current_quest['user_quest_id']; ?>)" title="Skip this quest and get a new one" style="background:none; border:none; cursor:pointer; font-size: 20px; float: right; padding: 5px; transition: transform 0.3s;" onmouseover="this.style.transform='rotate(180deg)'" onmouseout="this.style.transform='rotate(0deg)'">🔄</button>
+                    </h3>
                     
                     <div class="quest-meta">
                         <span class="badge badge-<?php echo $current_quest['difficulty']; ?>">
@@ -537,10 +545,28 @@ $token = csrf_token();
                     <?php endif; ?>
                 </div>
             <?php else: ?>
-                <div class="card">
-                    <p style="margin-bottom: 15px;">No active quest yet. Let's find you one!</p>
-                    <button class="button" onclick="loadNewQuest()">Get New Quest</button>
+                <div class="card" id="autoAssignCard">
+                    <p style="margin-bottom: 15px; text-align: center; font-size: 18px;">
+                        <span class="loading" style="vertical-align: middle; margin-right: 10px;"></span> 
+                        Assigning your next quest...
+                    </p>
                 </div>
+                <script>
+                    window.addEventListener('DOMContentLoaded', () => {
+                        fetch('get_quest.php')
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                location.reload();
+                            } else {
+                                document.getElementById('autoAssignCard').innerHTML = '<p style="text-align:center; color:#ff9999;">' + (data.error || 'Failed to assign quest') + '</p><div style="text-align:center; margin-top:15px;"><button class="button" onclick="location.reload()">Try Again</button></div>';
+                            }
+                        })
+                        .catch(err => {
+                            document.getElementById('autoAssignCard').innerHTML = '<p style="text-align:center; color:#ff9999;">Network error while assigning quest.</p><div style="text-align:center; margin-top:15px;"><button class="button" onclick="location.reload()">Try Again</button></div>';
+                        });
+                    });
+                </script>
             <?php endif; ?>
         </div>
         
@@ -659,29 +685,42 @@ $token = csrf_token();
             });
         }
         
-        function loadNewQuest() {
-            const btn = event.target;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span> Finding quest...';
-            
-            fetch('get_quest.php')
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error: ' + (data.error || 'Failed to load quest'));
-                    btn.disabled = false;
-                    btn.innerHTML = 'Get New Quest';
-                }
-            })
-            .catch(err => {
-                console.error('Quest finding error:', err);
-                alert('Error: Unable to find a quest right now. Please try again.');
-                btn.disabled = false;
-                btn.innerHTML = 'Get New Quest';
-            });
+        function skipQuest(questId) {
+            if (confirm('Are you sure you want to skip this quest? You will get a new one immediately.')) {
+                const formData = new FormData();
+                formData.append('user_quest_id', questId);
+                formData.append('csrf_token', '<?php echo escape($token); ?>');
+                
+                fetch('skip_quest.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to skip quest'));
+                    }
+                })
+                .catch(err => alert('Error skipping quest'));
+            }
         }
+        
+        // Auto-refresh notifications
+        let currentNotifMaxId = <?php echo (int)$notif_max_id; ?>;
+        let currentNotifCount = <?php echo (int)$notif_count; ?>;
+        
+        setInterval(() => {
+            fetch('check_notifications.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.max_id > currentNotifMaxId || data.count !== currentNotifCount) {
+                        location.reload();
+                    }
+                })
+                .catch(e => console.error(e));
+        }, 5000);
     </script>
 </body>
 </html>
