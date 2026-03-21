@@ -677,6 +677,7 @@ $token = csrf_token();
         <?php endif; ?>
 
         <!-- Cyber Hunt Minigame -->
+        <?php if ($user['level'] >= 10 || is_admin()): ?>
         <div class="section" style="margin-bottom: 30px;">
             <div style="background: linear-gradient(135deg, #050510 0%, #0ff 100%); padding: 25px; border-radius: 12px; border: 2px solid #0ff; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,255,255,0.4); flex-wrap: wrap; gap: 15px;">
                 <div style="flex: 1; min-width: 250px;">
@@ -686,6 +687,7 @@ $token = csrf_token();
                 <a href="hunt.php" class="button" style="background: #000; color: #0ff; text-decoration: none; padding: 12px 25px; font-weight: bold; border-radius: 30px; border: 2px solid #0ff; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8); white-space: nowrap;">Jack In</a>
             </div>
         </div>
+        <?php endif; ?>
 
         <!-- INSANE MODE UNLOCK -->
         <?php if ($user['level'] >= 10): ?>

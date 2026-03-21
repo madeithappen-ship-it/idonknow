@@ -8,6 +8,14 @@ if (!is_logged_in()) {
 }
 
 $user_id = $_SESSION['user_id'];
+
+// Lock to Level 10 or Admins
+$user = get_user($user_id);
+if (($user['level'] ?? 1) < 10 && !is_admin()) {
+    echo json_encode(['success' => false, 'error' => 'Cyberspace unlocks at Level 10']);
+    exit;
+}
+
 $input = json_decode(file_get_contents('php://input'), true);
 $action = $input['action'] ?? '';
 

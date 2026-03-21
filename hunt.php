@@ -7,6 +7,13 @@ if (!is_logged_in()) {
 
 $user = get_user();
 $user_id = $user['id'];
+
+// Lock Cyber Hunt to Level 10 or Admins
+if ($user['level'] < 10 && !is_admin()) {
+    $_SESSION['message'] = "🌐 Cyber Hunt cyberspace server unlocks at Level 10!";
+    $_SESSION['message_type'] = "error";
+    redirect('dashboard.php');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
