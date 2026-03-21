@@ -129,8 +129,11 @@ function handlePointerDown(e) {
     let domCard = e.currentTarget;
     let pileId = domCard.parentElement.dataset.pile || domCard.parentElement.id;
     
+    if (pileId === 'draw-pile') pileId = 'draw';
+    if (pileId === 'waste-pile') pileId = 'waste';
+    
     // Handle Draw Pile Click
-    if (pileId === 'draw-pile') {
+    if (pileId === 'draw') {
         drawCard();
         return;
     }
