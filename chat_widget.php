@@ -157,6 +157,23 @@ $is_chat_admin = is_admin();
 .conv-name { font-weight: 600; color: #fff; font-size: 14px; }
 .conv-preview { font-size: 11px; color: #888; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 .conv-unread { background: #f44336; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: bold; box-shadow: 0 0 5px rgba(244,67,54,0.4); }
+
+#chat-typing-indicator {
+    padding: 5px 15px;
+    font-size: 11px;
+    color: #888;
+    font-style: italic;
+}
+.typing-dots::after {
+    content: '.';
+    animation: dots 1.5s steps(5, end) infinite;
+}
+@keyframes dots {
+    0%, 20% { color: rgba(0,0,0,0); text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
+    40% { color: #888; text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
+    60% { text-shadow: .25em 0 0 #888, .5em 0 0 rgba(0,0,0,0); }
+    80%, 100% { text-shadow: .25em 0 0 #888, .5em 0 0 #888; }
+}
 </style>
 
 <div id="chat-widget">
@@ -170,8 +187,9 @@ $is_chat_admin = is_admin();
             <span style="cursor:pointer; font-size:18px; padding: 0 5px;" onclick="toggleChat()">×</span>
         </div>
         <div id="chat-body"></div>
+        <div id="chat-typing-indicator" style="display:none;"><span id="typing-text">Someone</span> is typing<span class="typing-dots"></span></div>
         <div id="chat-input-area" style="display:none;">
-            <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendChat()">
+            <input type="text" id="chat-input" placeholder="Type a message..." oninput="handleTyping()" onkeypress="if(event.key === 'Enter') sendChat()">
             <button id="chat-send" onclick="sendChat()">➣</button>
         </div>
     </div>
@@ -193,6 +211,19 @@ function linkifyText(text) {
     return safeText.replace(urlRegex, function(url) {
         return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #64B5F6; text-decoration: underline; font-weight: 600;">${url}</a>`;
     });
+}
+
+let _lastTypingSent = 0;
+
+function handleTyping() {
+    const now = Date.now();
+    if (now - _lastTypingSent > 2000) {
+        _lastTypingSent = now;
+        const fd = new FormData();
+        fd.append('action', 'typing');
+        if (_isAdminChat) fd.append('user_id', _activeChatUser);
+        fetch('chat_api.php', {method: 'POST', body: fd});
+    }
 }
 
 function toggleChat() {
@@ -267,11 +298,23 @@ function loadChatMessages() {
     }
     
     fetch(url).then(r=>r.json()).then(d=>{
-        if (!d.success || !d.messages) return;
+        if (!d.success) return;
         const body = document.getElementById('chat-body');
+        
+        // Render typing indicator seamlessly
+        const ind = document.getElementById('chat-typing-indicator');
+        if (d.is_typing) {
+            document.getElementById('typing-text').innerText = _isAdminChat ? "User" : "Admin";
+            ind.style.display = 'block';
+        } else {
+            ind.style.display = 'none';
+        }
+        
+        if (!d.messages) return;
         
         let shouldScroll = (body.scrollTop + body.clientHeight) >= (body.scrollHeight - 20) || _lastChatMsgId === 0;
         if (_lastChatMsgId === 0) body.innerHTML = '';
+
         
         d.messages.forEach(m => {
             if (m.id > _lastChatMsgId) _lastChatMsgId = m.id;
@@ -303,7 +346,7 @@ function sendChat() {
     fetch('chat_api.php', {method: 'POST', body: fd}).then(() => loadChatMessages());
 }
 
-setInterval(() => {
+function pollChat() {
     if (_isChatOpen) {
         if (_isAdminChat && _activeChatUser === 0) {
             loadChatConversations();
@@ -321,5 +364,8 @@ setInterval(() => {
             }
         });
     }
-}, 3000);
+    setTimeout(pollChat, _isChatOpen ? 1500 : 4000);
+}
+setTimeout(pollChat, 1500);
+
 </script>

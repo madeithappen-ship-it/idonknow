@@ -167,6 +167,46 @@ CREATE TABLE audit_log (
 );
 
 -- ========================================
+-- Chat Messages
+-- ========================================
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_type ENUM('user', 'admin') NOT NULL,
+    user_id INT NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    KEY idx_chat_user (user_id),
+    KEY idx_chat_created (created_at)
+);
+
+-- ========================================
+-- Chat Typing Status
+-- ========================================
+CREATE TABLE IF NOT EXISTS chat_typing (
+    user_id INT PRIMARY KEY,
+    user_typing_until DATETIME NULL,
+    admin_typing_until DATETIME NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ========================================
+-- Admin Notifications
+-- ========================================
+CREATE TABLE IF NOT EXISTS admin_notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL,
+    type VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id) REFERENCES admin_users(id) ON DELETE CASCADE,
+    KEY idx_admin_notif_admin (admin_id),
+    KEY idx_admin_notif_read (is_read)
+);
+
+-- ========================================
 -- Sample Super Admin (password: admin123 - CHANGE IN PRODUCTION)
 -- ========================================
 INSERT INTO admin_users (username, email, password, role, display_name, permissions) VALUES
