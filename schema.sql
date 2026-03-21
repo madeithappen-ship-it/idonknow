@@ -1,25 +1,32 @@
 -- ========================================
 -- MyLifeIsBoringAndIWantToDoASideQuestButDontKnowWhatToDo
--- Complete Database Schema
+-- Complete Database Schema (PostgreSQL)
 -- ========================================
 
-CREATE DATABASE IF NOT EXISTS sidequest_app;
-USE sidequest_app;
+-- Create enums
+CREATE TYPE user_status AS ENUM ('active', 'suspended', 'inactive');
+CREATE TYPE quest_difficulty AS ENUM ('easy', 'medium', 'hard', 'insane');
+CREATE TYPE quest_type AS ENUM ('truth', 'dare', 'social', 'dark_humor', 'challenge', 'physical');
+CREATE TYPE safety_level AS ENUM ('safe', 'slightly_uncomfortable', 'risky');
+CREATE TYPE user_quest_status AS ENUM ('assigned', 'in_progress', 'submitted', 'approved', 'rejected', 'expired');
+CREATE TYPE submission_status AS ENUM ('pending', 'approved', 'rejected', 'expired');
+CREATE TYPE admin_role AS ENUM ('super_admin', 'admin', 'moderator');
+CREATE TYPE user_type AS ENUM ('user', 'admin');
 
 -- Drop existing tables in correct dependency order
-DROP TABLE IF EXISTS submissions;
-DROP TABLE IF EXISTS audit_log;
-DROP TABLE IF EXISTS user_quests;
-DROP TABLE IF EXISTS sessions;
-DROP TABLE IF EXISTS quests;
-DROP TABLE IF EXISTS admin_users;
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS audit_log CASCADE;
+DROP TABLE IF EXISTS submissions CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
+DROP TABLE IF EXISTS user_quests CASCADE;
+DROP TABLE IF EXISTS admin_users CASCADE;
+DROP TABLE IF EXISTS quests CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 -- ========================================
 -- Users Table
 -- ========================================
 CREATE TABLE users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -30,64 +37,67 @@ CREATE TABLE users (
     total_completed INT DEFAULT 0,
     current_streak INT DEFAULT 0,
     last_quest_date TIMESTAMP NULL,
-    status ENUM('active', 'suspended', 'inactive') DEFAULT 'active',
+    status user_status DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_username (username),
-    INDEX idx_email (email),
-    INDEX idx_level (level),
-    INDEX idx_xp (xp)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_username ON users (username);
+CREATE INDEX idx_email ON users (email);
+CREATE INDEX idx_level ON users (level);
+CREATE INDEX idx_xp ON users (xp);
 
 -- ========================================
--- Admin Users (created before submissions)
+-- Admin Users
 -- ========================================
 CREATE TABLE admin_users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    role ENUM('super_admin', 'admin', 'moderator') DEFAULT 'admin',
+    role admin_role DEFAULT 'admin',
     display_name VARCHAR(255),
-    permissions JSON,
+    permissions JSONB,
     is_active BOOLEAN DEFAULT TRUE,
     last_login TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_username (username),
-    INDEX idx_role (role)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_admin_username ON admin_users (username);
+CREATE INDEX idx_admin_role ON admin_users (role);
 
 -- ========================================
 -- Quests Table (Main Quest Database)
 -- ========================================
 CREATE TABLE quests (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    difficulty ENUM('easy', 'medium', 'hard', 'insane') DEFAULT 'medium',
-    type ENUM('truth', 'dare', 'social', 'dark_humor', 'challenge', 'physical') DEFAULT 'dare',
+    difficulty quest_difficulty DEFAULT 'medium',
+    type quest_type DEFAULT 'dare',
     xp_reward INT DEFAULT 10,
-    difficulty_multiplier DECIMAL(2, 1) DEFAULT 1.0,
-    safety_level ENUM('safe', 'slightly_uncomfortable', 'risky') DEFAULT 'safe',
+    difficulty_multiplier DECIMAL(3, 1) DEFAULT 1.0,
+    safety_level safety_level DEFAULT 'safe',
     requires_proof BOOLEAN DEFAULT TRUE,
     keywords VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE,
-    INDEX idx_difficulty (difficulty),
-    INDEX idx_type (type),
-    INDEX idx_active (is_active)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE INDEX idx_difficulty ON quests (difficulty);
+CREATE INDEX idx_type ON quests (type);
+CREATE INDEX idx_active ON quests (is_active);
 
 -- ========================================
 -- User Quests Progress Tracking
 -- ========================================
 CREATE TABLE user_quests (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     quest_id INT NOT NULL,
-    status ENUM('assigned', 'in_progress', 'submitted', 'approved', 'rejected', 'expired') DEFAULT 'assigned',
+    status user_quest_status DEFAULT 'assigned',
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP NULL,
     submission_id INT NULL,
@@ -96,18 +106,19 @@ CREATE TABLE user_quests (
     expires_at TIMESTAMP NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (quest_id) REFERENCES quests(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_user_quest (user_id, quest_id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_user_status (user_id, status),
-    INDEX idx_quest_id (quest_id),
-    INDEX idx_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    UNIQUE (user_id, quest_id)
+);
+
+CREATE INDEX idx_user_quest_user ON user_quests (user_id);
+CREATE INDEX idx_user_quest_status ON user_quests (user_id, status);
+CREATE INDEX idx_user_quest_quest ON user_quests (quest_id);
+CREATE INDEX idx_user_quest_status_only ON user_quests (status);
 
 -- ========================================
 -- Submissions (Proof Upload)
 -- ========================================
 CREATE TABLE submissions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     user_quest_id INT NOT NULL,
     quest_id INT NOT NULL,
@@ -115,7 +126,7 @@ CREATE TABLE submissions (
     file_name VARCHAR(255) NOT NULL,
     file_size INT NOT NULL,
     mime_type VARCHAR(100),
-    verification_status ENUM('pending', 'approved', 'rejected', 'expired') DEFAULT 'pending',
+    verification_status submission_status DEFAULT 'pending',
     verified_by INT NULL,
     verification_notes TEXT,
     keywords_found VARCHAR(500),
@@ -125,12 +136,13 @@ CREATE TABLE submissions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (user_quest_id) REFERENCES user_quests(id) ON DELETE CASCADE,
     FOREIGN KEY (quest_id) REFERENCES quests(id) ON DELETE CASCADE,
-    FOREIGN KEY (verified_by) REFERENCES admin_users(id) ON DELETE SET NULL,
-    INDEX idx_user_id (user_id),
-    INDEX idx_verification_status (verification_status),
-    INDEX idx_submitted_at (submitted_at),
-    INDEX idx_pending (verification_status, submitted_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    FOREIGN KEY (verified_by) REFERENCES admin_users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_sub_user ON submissions (user_id);
+CREATE INDEX idx_sub_status ON submissions (verification_status);
+CREATE INDEX idx_sub_submitted ON submissions (submitted_at);
+CREATE INDEX idx_sub_pending ON submissions (verification_status, submitted_at);
 
 -- ========================================
 -- Session Management
@@ -138,33 +150,35 @@ CREATE TABLE submissions (
 CREATE TABLE sessions (
     session_id VARCHAR(255) PRIMARY KEY,
     user_id INT,
-    user_type ENUM('user', 'admin') DEFAULT 'user',
+    user_type user_type DEFAULT 'user',
     ip_address VARCHAR(45),
     user_agent VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_user_id (user_id),
-    INDEX idx_expires_at (expires_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_session_user ON sessions (user_id);
+CREATE INDEX idx_session_expires ON sessions (expires_at);
 
 -- ========================================
 -- Audit Log
 -- ========================================
 CREATE TABLE audit_log (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     admin_id INT,
     action VARCHAR(255) NOT NULL,
     target_type VARCHAR(100),
     target_id INT,
-    details JSON,
+    details JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (admin_id) REFERENCES admin_users(id) ON DELETE SET NULL,
-    INDEX idx_admin_id (admin_id),
-    INDEX idx_action (action),
-    INDEX idx_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    FOREIGN KEY (admin_id) REFERENCES admin_users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_audit_admin ON audit_log (admin_id);
+CREATE INDEX idx_audit_action ON audit_log (action);
+CREATE INDEX idx_audit_created ON audit_log (created_at);
 
 -- ========================================
 -- Sample Super Admin (password: admin123 - CHANGE IN PRODUCTION)

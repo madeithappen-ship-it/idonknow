@@ -29,8 +29,8 @@ $isDevelopment = $env === 'development';
 // Database Configuration - Support both .env and direct env vars
 $db_config = [
     'host' => getenv('DB_HOST') ?: 'localhost',
-    'port' => getenv('DB_PORT') ?: '3306',
-    'user' => getenv('DB_USER') ?: 'root',
+    'port' => getenv('DB_PORT') ?: '5432',
+    'user' => getenv('DB_USER') ?: 'postgres',
     'pass' => getenv('DB_PASS') ?: '',
     'name' => getenv('DB_NAME') ?: 'sidequest_app',
 ];
@@ -59,10 +59,9 @@ if (!is_dir($app_config['upload_dir'] . 'proofs/')) {
 // Database Connection (PDO)
 // ========================================
 try {
-    $dsn = "mysql:host=" . $db_config['host'] . 
+    $dsn = "pgsql:host=" . $db_config['host'] . 
            ";port=" . $db_config['port'] . 
-           ";dbname=" . $db_config['name'] . 
-           ";charset=utf8mb4";
+           ";dbname=" . $db_config['name'];
     
     $pdo = new PDO($dsn, $db_config['user'], $db_config['pass'], [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

@@ -44,9 +44,9 @@ services:
 
   - type: pserv
     name: sidequest-db
-    env: mysql
+    env: postgres
     plan: starter
-    mysqlVersion: "8.0"
+    postgresVersion: "15"
     envVars:
       - key: MYSQL_DATABASE
         value: sidequest_app
