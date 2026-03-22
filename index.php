@@ -656,8 +656,7 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
     <!-- Cookie Consent Banner -->
     <script src="assets/js/cookies.js"></script>
 
-    <!-- Progressive Web App Helper -->
-    <script src="assets/js/pwa-helper.js"></script>
+
     
 
 </body>

@@ -1199,8 +1199,7 @@ $token = csrf_token();
     <!-- Cookie Consent Banner -->
     <script src="assets/js/cookies.js"></script>
 
-    <!-- Progressive Web App Helper -->
-    <script src="assets/js/pwa-helper.js"></script>
+
     
     <?php require_once(__DIR__ . '/chat_widget.php'); ?>
 </body>
