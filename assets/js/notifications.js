@@ -10,6 +10,10 @@ class NotificationManager {
         this.isPolling = false;
         this.sounds = {};
         this.maxNotifications = 5;
+        this.shownNotifications = new Set(); // Track shown notifications
+        
+        // Load previously shown notifications from localStorage
+        this.loadShownNotifications();
         
         // Initialize notification UI
         this.createNotificationContainer();
@@ -26,6 +30,60 @@ class NotificationManager {
                 this.startPolling();
             }
         });
+    }
+    
+    /**
+     * Load shown notifications from localStorage
+     */
+    loadShownNotifications() {
+        try {
+            const stored = localStorage.getItem('notif_shown_' + this.getSessionKey());
+            if (stored) {
+                this.shownNotifications = new Set(JSON.parse(stored));
+            }
+        } catch (e) {
+            console.error('Error loading shown notifications:', e);
+        }
+    }
+    
+    /**
+     * Save shown notifications to localStorage
+     */
+    saveShownNotifications() {
+        try {
+            if (this.shownNotifications.size > 0) {
+                localStorage.setItem('notif_shown_' + this.getSessionKey(), 
+                    JSON.stringify([...this.shownNotifications]));
+            }
+        } catch (e) {
+            console.error('Error saving shown notifications:', e);
+        }
+    }
+    
+    /**
+     * Get unique session key for storing notifications
+     */
+    getSessionKey() {
+        // Use user_id from session or create a session-based key
+        if (window.__notif_session_key === undefined) {
+            window.__notif_session_key = 'session_' + Math.random().toString(36).substr(2, 9);
+        }
+        return window.__notif_session_key;
+    }
+    
+    /**
+     * Mark notification as shown
+     */
+    markAsShown(notifId) {
+        this.shownNotifications.add(notifId);
+        this.saveShownNotifications();
+    }
+    
+    /**
+     * Check if notification has been shown
+     */
+    hasBeenShown(notifId) {
+        return this.shownNotifications.has(notifId);
     }
     
     /**
@@ -129,7 +187,12 @@ class NotificationManager {
             })
             .then(data => {
                 if (data.success && data.notifications && data.notifications.length > 0) {
-                    data.notifications.forEach(notif => this.showNotification(notif));
+                    // Only show notifications that haven't been shown before
+                    data.notifications.forEach(notif => {
+                        if (!this.hasBeenShown(notif.id)) {
+                            this.showNotification(notif);
+                        }
+                    });
                     this.lastPollId = data.next_poll_id || this.lastPollId;
                 }
             })
@@ -147,6 +210,9 @@ class NotificationManager {
     showNotification(notif) {
         const container = document.getElementById('notification-container');
         if (!container) return;
+        
+        // Mark as shown immediately to prevent duplicate display
+        this.markAsShown(notif.id);
         
         // Limit number of visible notifications
         if (container.children.length >= this.maxNotifications) {
