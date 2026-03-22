@@ -1,8 +1,3 @@
-/**
- * Enhanced Chess Game Script with AI
- * Integrates Stockfish WASM for AI opponent, analysis, and coaching
- */
-
 const chess = new Chess();
 let myColor = 'w';
 let currentRoomId = null;
@@ -16,20 +11,6 @@ let gameStartTime = null;
 let timerInterval = null;
 let gameTimeLimit = 1800; // 30 minutes in seconds
 
-// AI System Variables
-let chessAI = null;
-let aiEnabled = false;
-let aiThinking = false;
-let coachEnabled = true;
-let previousEvaluation = 0;
-let hintMove = null;
-let hintsUsed = 0;
-let maxHints = 3;
-
-// ============================================================================
-// API FUNCTIONS
-// ============================================================================
-
 function fetchAPI(action, payload = {}) {
     return fetch(`api.php?action=${action}`, {
         method: 'POST',
@@ -40,10 +21,6 @@ function fetchAPI(action, payload = {}) {
         return { success: false, error: 'Network Error' };
     });
 }
-
-// ============================================================================
-// BOARD RENDERING
-// ============================================================================
 
 function initBoard() {
     const boardEl = document.getElementById('chessboard');
@@ -68,7 +45,6 @@ function initBoard() {
         });
     });
     updateBoard();
-    updateEvaluationBar();
 }
 
 function updateBoard() {
@@ -94,12 +70,8 @@ function updateBoard() {
     }
 }
 
-// ============================================================================
-// MOVE HANDLING
-// ============================================================================
-
 function onDragStart(e) {
-    if (gameStatus !== 'playing' || aiThinking) return e.preventDefault();
+    if (gameStatus !== 'playing') return e.preventDefault();
     if (chess.turn() !== myColor) return e.preventDefault();
     draggedPiece = e.target.dataset.square;
     setSelection(draggedPiece);
@@ -123,7 +95,7 @@ function onDrop(e) {
 }
 
 function onSquareClick(e) {
-    if (gameStatus !== 'playing' || aiThinking) return;
+    if (gameStatus !== 'playing') return;
     if (chess.turn() !== myColor) return;
     
     let targetSquare = e.target.dataset.square || e.target.parentElement.dataset.square;
@@ -178,16 +150,6 @@ function finishMove(move) {
     document.querySelector(`[data-square="${move.to}"]`)?.classList.add('last-move');
     appendMoveHistory(move);
     
-    // Analyze the move if AI is enabled
-    if (isVsComputer && chessAI && coachEnabled) {
-        analyzeMoveQuality(move);
-    }
-    
-    // Analyze position for evaluation bar
-    if (chessAI) {
-        analyzePosition();
-    }
-    
     let reason = '';
     if (chess.in_checkmate()) reason = 'Checkmate';
     else if (chess.in_draw()) reason = 'Draw';
@@ -195,9 +157,7 @@ function finishMove(move) {
     
     if (isVsComputer) {
         checkLocalGameOver();
-        if (!chess.game_over()) {
-            makeAIMove();
-        }
+        if (!chess.game_over()) setTimeout(makeComputerMove, 500);
     } else {
         fetchAPI('move', {
             room_code: currentRoomId,
@@ -212,292 +172,23 @@ function finishMove(move) {
     }
 }
 
-// ============================================================================
-// AI OPPONENT FUNCTIONS
-// ============================================================================
-
-async function makeAIMove() {
-    if (!chessAI || chess.game_over()) return;
-    
-    aiThinking = true;
-    document.getElementById('btn-hint').disabled = true;
-    
-    try {
-        const { move, analysis } = await chessAI.getAIMove(chess.fen(), 800);
-        
-        if (move && move !== '(none)') {
-            // Parse UCI move to algebraic
-            const from = move.substring(0, 2);
-            const to = move.substring(2, 4);
-            const promotion = move.length > 4 ? move[4] : undefined;
-            
-            const moveObj = chess.move({
-                from: from,
-                to: to,
-                promotion: promotion || 'q'
-            });
-            
-            if (moveObj) {
-                updateBoard();
-                clearHighlights();
-                document.querySelector(`[data-square="${moveObj.from}"]`)?.classList.add('last-move');
-                document.querySelector(`[data-square="${moveObj.to}"]`)?.classList.add('last-move');
-                appendMoveHistory(moveObj);
-                
-                // Update previous evaluation for next move analysis
-                if (analysis && analysis.score !== null) {
-                    previousEvaluation = analysis.score;
-                }
-                
-                updateEvaluationBar();
-                checkLocalGameOver();
-            }
-        }
-    } catch (err) {
-        console.error('AI move error:', err);
-    } finally {
-        aiThinking = false;
-        document.getElementById('btn-hint').disabled = false;
-    }
-}
-
-async function analyzePosition() {
-    if (!chessAI || gameStatus !== 'playing') return;
-    
-    try {
-        // Get quick analysis without waiting for full depth
-        const fen = chess.fen();
-        
-        // Quick evaluation callback
-        const originalCallback = chessAI.callbacks.onAnalysis;
-        let bestEval = previousEvaluation;
-        
-        chessAI.callbacks.onAnalysis = (info) => {
-            if (info.score !== null) {
-                bestEval = info.score;
-                updateEvaluationDisplay(bestEval, info.depth);
-            }
-        };
-        
-        chessAI.callbacks.onBestMove = (move, analysis) => {
-            chessAI.callbacks.onAnalysis = originalCallback;
-            if (analysis && analysis.score !== null) {
-                previousEvaluation = analysis.score;
-            }
-        };
-        
-        chessAI.analyzePosition(fen);
-    } catch (err) {
-        console.error('Analysis error:', err);
-    }
-}
-
-async function analyzeMoveQuality(move) {
-    if (!chessAI) return;
-    
-    try {
-        // Store the FEN before the move
-        const fenBeforeMove = chess.fen();
-        chess.undo();
-        const fenBeforeActual = chess.fen();
-        chess.redo();
-        
-        // Already made the move, so analyze new position
-        const evaluation = await chessAI.getHint(chess.fen());
-        
-        const difference = Math.abs((evaluation.analysis?.score || 0) - previousEvaluation);
-        const quality = chessAI.assessMoveQuality(difference, evaluation.analysis?.score || 0);
-        
-        // Display move quality feedback
-        showMoveQualityFeedback(quality, difference);
-        
-    } catch (err) {
-        console.error('Move analysis error:', err);
-    }
-}
-
-async function getHint() {
-    if (!chessAI || chess.game_over() || hintsUsed >= maxHints) return;
-    
-    hintsUsed++;
-    document.getElementById('btn-hint').disabled = true;
+function makeComputerMove() {
+    if (chess.game_over()) return;
+    const moves = chess.moves({ verbose: true });
+    if (moves.length === 0) return;
+    const move = moves[Math.floor(Math.random() * moves.length)];
+    chess.move(move);
+    updateBoard();
     clearHighlights();
-    
-    try {
-        const { move, analysis } = await chessAI.getHint(chess.fen());
-        
-        if (move && move !== '(none)') {
-            hintMove = move;
-            const from = move.substring(0, 2);
-            const to = move.substring(2, 4);
-            
-            // Highlight hint squares
-            document.querySelector(`[data-square="${from}"]`)?.classList.add('hint-from');
-            document.querySelector(`[data-square="${to}"]`)?.classList.add('hint-to');
-            
-            // Show in coach panel
-            showHintFeedback(from, to, analysis);
-            
-            // Remove highlights after 5 seconds
-            setTimeout(() => {
-                clearHighlights('hint');
-            }, 5000);
-        }
-    } catch (err) {
-        console.error('Hint error:', err);
-    } finally {
-        document.getElementById('btn-hint').disabled = false;
-    }
+    document.querySelector(`[data-square="${move.from}"]`)?.classList.add('last-move');
+    document.querySelector(`[data-square="${move.to}"]`)?.classList.add('last-move');
+    appendMoveHistory(move);
+    checkLocalGameOver();
 }
 
-// ============================================================================
-// EVALUATION & FEEDBACK
-// ============================================================================
-
-function updateEvaluationBar() {
-    if (!chessAI || chess.game_over()) return;
-    
-    const evalBar = document.getElementById('eval-bar-fill');
-    const evalText = document.getElementById('eval-text');
-    
-    if (!evalBar || !evalText) return;
-    
-    const evaluation = previousEvaluation || 0;
-    const whiteScore = evaluation;
-    
-    // Calculate percentage (50% = equal)
-    // Values range from -500 (black winning) to +500 (white winning)
-    let percentage = 50 + (Math.min(Math.max(whiteScore, -500), 500) / 500) * 50;
-    percentage = Math.max(0, Math.min(100, percentage));
-    
-    // Update bar
-    evalBar.style.height = percentage + '%';
-    
-    // Update color
-    if (percentage > 52) {
-        evalBar.classList.remove('black');
-    } else if (percentage < 48) {
-        evalBar.classList.add('black');
-    }
-    
-    // Update text
-    let displayEval = Math.abs(whiteScore) / 100;
-    if (whiteScore < 0) {
-        evalText.innerText = displayEval.toFixed(1);
-        evalText.style.color = '#666';
-    } else {
-        evalText.innerText = '+' + displayEval.toFixed(1);
-        evalText.style.color = '#aaa';
-    }
+function clearHighlights() {
+    document.querySelectorAll('.square').forEach(s => s.classList.remove('last-move'));
 }
-
-function updateEvaluationDisplay(evaluation, depth) {
-    updateEvaluationBar();
-    
-    const depthEl = document.getElementById('engine-depth');
-    const nodesEl = document.getElementById('engine-nodes');
-    
-    if (depthEl) depthEl.innerText = depth || '-';
-    if (nodesEl) nodesEl.innerText = '-'; // We don't track nodes in browser version
-}
-
-function showMoveQualityFeedback(quality, difference) {
-    const badge = document.getElementById('move-quality-badge');
-    const badgeText = document.getElementById('move-quality-text');
-    
-    if (!badge || !badgeText) return;
-    
-    const qualityLabels = {
-        'excellent': '✓ Excellent Move',
-        'good': '✓ Good Move',
-        'inaccuracy': '○ Inaccuracy',
-        'mistake': '✗ Mistake',
-        'blunder': '✗✗ Blunder'
-    };
-    
-    badgeText.innerText = qualityLabels[quality] || 'Analyzed';
-    badgeText.className = 'quality-' + quality;
-    badge.classList.remove('hidden');
-    
-    // Update coach message
-    const coachMsg = document.getElementById('coach-message');
-    if (coachMsg) {
-        const messages = {
-            'excellent': '🔥 Excellent! That was a very strong move.',
-            'good': '✓ Good move! Keep it up.',
-            'inaccuracy': '⚠️ This loses a bit of advantage. Watch for better options.',
-            'mistake': 'Oops! This move loses significant material or position.',
-            'blunder': '⚠️ BLUNDER! Major mistake. Try to recover now.'
-        };
-        coachMsg.innerText = messages[quality] || 'Move analyzed.';
-    }
-    
-    // Auto-hide after 4 seconds
-    setTimeout(() => {
-        badge.classList.add('hidden');
-    }, 4000);
-}
-
-function showHintFeedback(fromSquare, toSquare, analysis) {
-    const coachMsg = document.getElementById('coach-message');
-    const evalText = document.getElementById('eval-text');
-    
-    if (coachMsg) {
-        coachMsg.innerText = `💡 Hint: ${fromSquare.toUpperCase()} → ${toSquare.toUpperCase()}`;
-    }
-    
-    console.log('Hint:', fromSquare, toSquare, analysis);
-}
-
-function showCoachFeedback(evaluation, gamePhase = 'middle') {
-    if (!coachEnabled) return;
-    
-    const panel = document.getElementById('coach-feedback-panel');
-    const msg = document.getElementById('coach-message');
-    
-    if (!panel || !msg) return;
-    
-    panel.classList.remove('hidden');
-    
-    const absEval = Math.abs(evaluation);
-    const isWhiteWinning = evaluation > 0;
-    
-    let feedback = '';
-    
-    if (absEval > 500) {
-        feedback = isWhiteWinning 
-            ? '♔ You are winning! Consolidate your advantage.' 
-            : '♚ You are losing material. Look for counterattack opportunities.';
-    } else if (absEval > 200) {
-        feedback = isWhiteWinning 
-            ? '♔ You have an advantage. Convert it carefully.' 
-            : '♚ You are behind. Create complications.';
-    } else if (absEval > 50) {
-        feedback = isWhiteWinning 
-            ? '♔ Slightly better position. Keep the pressure.' 
-            : '♚ Slightly worse. Don\'t make hasty moves.';
-    } else {
-        feedback = '⚖️ Equal position. Both sides have chances.';
-    }
-    
-    msg.innerText = feedback;
-}
-
-function clearHighlights(type = 'all') {
-    if (type === 'all' || type === 'last-move') {
-        document.querySelectorAll('.square').forEach(s => s.classList.remove('last-move'));
-    }
-    if (type === 'all' || type === 'hint') {
-        document.querySelectorAll('.square').forEach(s => {
-            s.classList.remove('hint-from');
-            s.classList.remove('hint-to');
-        });
-    }
-}
-
-// ============================================================================
-// GAME STATE
-// ============================================================================
 
 let moveCounter = 1;
 function appendMoveHistory(move) {
@@ -538,71 +229,7 @@ function startGameUI(isComputer, opponentName = 'Computer') {
     document.getElementById('opponent-name').innerText = opponentName;
     gameStatus = 'playing';
     initBoard();
-    
-    // Setup AI if playing computer
-    if (isComputer) {
-        document.getElementById('ai-difficulty-section').classList.remove('hidden');
-        document.getElementById('ai-coach-toggle').classList.remove('hidden');
-        document.getElementById('btn-hint').style.display = 'block';
-        setupAIDifficulty();
-        hintsUsed = 0;
-    }
 }
-
-// ============================================================================
-// AI INITIALIZATION & SETUP
-// ============================================================================
-
-async function initializeAI() {
-    try {
-        console.log('Initializing Chess AI...');
-        chessAI = new ChessAI();
-        
-        chessAI.callbacks.onReady = () => {
-            console.log('✓ Stockfish engine ready!');
-            aiEnabled = true;
-        };
-        
-        chessAI.callbacks.onBestMove = (move, analysis) => {
-            console.log('Best move:', move);
-        };
-        
-        chessAI.callbacks.onAnalysis = (analysis) => {
-            // Silently update analysis
-        };
-        
-        chessAI.callbacks.onError = (error) => {
-            console.error('AI Error:', error);
-            showNotification('AI engine error: ' + error, 'error');
-        };
-        
-        await chessAI.initialize();
-        console.log('✓ AI initialization complete');
-        return true;
-    } catch (err) {
-        console.error('Failed to initialize AI:', err);
-        return false;
-    }
-}
-
-function setupAIDifficulty() {
-    document.querySelectorAll('.difficulty-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            const difficulty = btn.getAttribute('data-difficulty');
-            if (chessAI) {
-                chessAI.setDifficulty(difficulty);
-                console.log(`AI difficulty set to: ${difficulty}`);
-            }
-        });
-    });
-}
-
-// ============================================================================
-// SYNC POLLING FOR MULTIPLAYER
-// ============================================================================
 
 function startSyncPolling() {
     if (syncInterval) clearInterval(syncInterval);
@@ -648,50 +275,15 @@ function startSyncPolling() {
     }, 2500);
 }
 
-// ============================================================================
-// UTILITIES & NOTIFICATIONS
-// ============================================================================
-
-function showNotification(message, type = 'info') {
-    // Simple toast notification
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === 'error' ? '#ef4444' : '#4CAF50'};
-        color: white;
-        padding: 15px 20px;
-        border-radius: 4px;
-        z-index: 10000;
-        animation: slideInDown 0.3s;
-    `;
-    toast.innerText = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
-}
-
-// ============================================================================
-// INITIALIZATION & EVENT LISTENERS
-// ============================================================================
-
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Initializing Chess application...');
-    
-    // Initialize AI engine
-    await initializeAI();
-    
-    // Initialize board
+// Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
     initBoard();
     
     // Setup Tabs
     const tabs = document.querySelectorAll('.sidebar-tabs .tab');
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            if (gameStatus === 'playing') return;
+            if (gameStatus === 'playing') return; // Disable tabs during a game
             
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
@@ -707,33 +299,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
     
-    // Setup AI Coach Toggle
-    const coachToggle = document.getElementById('coach-enabled');
-    if (coachToggle) {
-        coachToggle.addEventListener('change', (e) => {
-            coachEnabled = e.target.checked;
-            const panel = document.getElementById('coach-feedback-panel');
-            if (panel) {
-                if (!coachEnabled) {
-                    panel.classList.add('hidden');
-                }
-            }
-        });
-    }
-    
-    // Setup Hint Button
-    const hintBtn = document.getElementById('btn-hint');
-    if (hintBtn) {
-        hintBtn.addEventListener('click', () => {
-            if (hintsUsed >= maxHints) {
-                alert(`You've used all ${maxHints} hints!`);
-                return;
-            }
-            getHint();
-        });
-    }
-    
-    // Setup Challenge Polling
+    // Setup Challenge Polling (reduced frequency for performance)
     setInterval(pollChallenges, 5000);
     
     // Auto Join
@@ -754,10 +320,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 });
-
-// ============================================================================
-// GAME SETUP BUTTONS
-// ============================================================================
 
 document.getElementById('btn-create-link').addEventListener('click', () => {
     const btn = document.getElementById('btn-create-link');
@@ -792,7 +354,7 @@ document.getElementById('btn-comp-match').addEventListener('click', () => {
     isVsComputer = true;
     currentRoomId = 'local';
     myColor = 'w';
-    startGameUI(true, 'Computer (Medium)');
+    startGameUI(true, 'Computer (Level 1)');
 });
 
 document.getElementById('btn-join-link').addEventListener('click', () => {
@@ -818,10 +380,6 @@ document.getElementById('btn-draw').addEventListener('click', () => {
     alert('Draw offers are not supported in training/casual play right now.');
 });
 
-// ============================================================================
-// PLAYER MANAGEMENT & CHALLENGES
-// ============================================================================
-
 function loadPlayers() {
     const listEl = document.getElementById('players-list');
     listEl.innerHTML = '<div style="color:#888; text-align:center; padding: 20px;">Loading players...</div>';
@@ -842,7 +400,7 @@ function loadPlayers() {
             const row = document.createElement('div');
             row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: #312e2b; padding: 10px; border-radius: 5px;';
             
-            const avatarPath = p.avatar_url ? `../uploads/avatars/${p.avatar_url}` : '';
+            const avatarPath = p.avatar_url ? `../uploads/avatars/${p.avatar_url}` : ''; // Fallback to placeholder if none
             const avatarHtml = p.avatar_url 
                 ? `<img src="${avatarPath}" style="width: 32px; height: 32px; border-radius: 4px; object-fit: cover;">`
                 : `<div style="width: 32px; height: 32px; background: #403d39; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px;"><i class="fa-solid fa-user"></i></div>`;
@@ -860,6 +418,7 @@ function loadPlayers() {
             listEl.appendChild(row);
         });
         
+        // Add click listeners to challenge buttons
         document.querySelectorAll('.challenge-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const opp = e.target.getAttribute('data-opponent');
@@ -877,12 +436,17 @@ function challengePlayer(opponentUsername, btnEl) {
         if (data.success) {
             currentRoomId = data.room_code;
             myColor = 'w';
+            
+            // For now, "challenging" just generates a link directly to them if we had a notification system.
+            // Since there's no real-time notification system outside of chess, we'll just show the link and prompt them to share it.
             const fullLink = window.location.origin + window.location.pathname + '?room=' + currentRoomId;
             
+            // Switch to New Game tab to show the link
             document.querySelector('[data-target="panel-new-game"]').click();
             document.getElementById('share-link-input').value = fullLink;
             document.getElementById('share-link-container').classList.remove('hidden');
             
+            // Add a small hint text
             const p = document.createElement('p');
             p.style.cssText = "color: #fbbf24; font-size: 12px; margin-top: 10px;";
             p.innerText = `You challenged ${opponentUsername}! Share this link with them.`;
@@ -900,6 +464,7 @@ function challengePlayer(opponentUsername, btnEl) {
 
 let activeChallengeRoom = null;
 function pollChallenges() {
+    // Skip if game is active or already showing a challenge toast
     if (gameStatus === 'playing' || !document.getElementById('challenge-toast').classList.contains('hidden')) return;
     
     fetchAPI('check_challenges').then(data => {

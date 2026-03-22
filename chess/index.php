@@ -48,8 +48,19 @@ $username = get_user()['username'];
         ⏱️ Time: <span id="timer-display">30:00</span>
     </div>
     
-    <div id="chessboard" class="chessboard">
-        <!-- Board squares will be injected by script.js -->
+    <!-- Board with Evaluation Bar -->
+    <div class="board-container">
+        <!-- Evaluation Bar -->
+        <div class="eval-bar-container">
+            <div class="eval-bar" id="eval-bar">
+                <div class="eval-bar-fill white" id="eval-bar-fill"></div>
+                <div class="eval-text" id="eval-text">0.0</div>
+            </div>
+        </div>
+        
+        <div id="chessboard" class="chessboard">
+            <!-- Board squares will be injected by script.js -->
+        </div>
     </div>
     
     <div class="player-tag player-bottom">
@@ -118,6 +129,56 @@ $username = get_user()['username'];
                 <span id="game-status-text">Game in Progress</span>
             </div>
             
+            <!-- AI Difficulty Selector (shown only vs computer) -->
+            <div id="ai-difficulty-section" class="hidden" style="margin-bottom: 15px; background: #312e2b; padding: 12px; border-radius: 8px;">
+                <label style="color: #888; font-size: 12px; font-weight: 600; display: block; margin-bottom: 8px;">AI Difficulty</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button class="difficulty-btn" data-difficulty="easy" style="padding: 8px; background: #1a5c1a; border: 2px solid #4CAF50; border-radius: 4px; color: #4CAF50; cursor: pointer; font-size: 12px; font-weight: 600;">Easy</button>
+                    <button class="difficulty-btn active" data-difficulty="medium" style="padding: 8px; background: #4CAF50; border: 2px solid #4CAF50; border-radius: 4px; color: #000; cursor: pointer; font-size: 12px; font-weight: 600;">Medium</button>
+                    <button class="difficulty-btn" data-difficulty="hard" style="padding: 8px; background: #ff9800; border: 2px solid #ff9800; border-radius: 4px; color: #000; cursor: pointer; font-size: 12px; font-weight: 600;">Hard</button>
+                    <button class="difficulty-btn" data-difficulty="expert" style="padding: 8px; background: #f44336; border: 2px solid #f44336; border-radius: 4px; color: #fff; cursor: pointer; font-size: 12px; font-weight: 600;">Expert</button>
+                </div>
+            </div>
+            
+            <!-- AI Coach Toggle -->
+            <div id="ai-coach-toggle" class="hidden" style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" id="coach-enabled" checked style="cursor: pointer;">
+                <label for="coach-enabled" style="color: #c3c3c0; font-size: 13px; cursor: pointer; flex: 1;">
+                    <i class="fa-solid fa-graduation-cap"></i> AI Coach
+                </label>
+            </div>
+            
+            <!-- Move Hint Button -->
+            <button id="btn-hint" class="btn btn-secondary" style="width: 100%; margin-bottom: 12px; display: none;">
+                <i class="fa-solid fa-lightbulb"></i> Get Hint
+            </button>
+            
+            <!-- AI Coach Feedback Panel -->
+            <div id="coach-feedback-panel" class="hidden" style="background: linear-gradient(135deg, #1a3a3a 0%, #0d2626 100%); padding: 12px; border-radius: 8px; border-left: 4px solid #4CAF50; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <i class="fa-solid fa-brain" style="color: #4CAF50; font-size: 16px;"></i>
+                    <span style="color: #81b64c; font-size: 12px; font-weight: 600;">Coach's Tip</span>
+                </div>
+                <p id="coach-message" style="color: #c3c3c0; font-size: 12px; line-height: 1.4; margin: 0;">Position analysis will appear here...</p>
+                <div id="move-quality-badge" style="margin-top: 8px; display: none;">
+                    <span id="move-quality-text" style="display: inline-block; padding: 4px 8px; border-radius: 4px; background: #312e2b; color: #81b64c; font-size: 11px; font-weight: 600;"></span>
+                </div>
+            </div>
+            
+            <!-- Engine Analysis -->
+            <div id="engine-analysis-panel" style="background: #262421; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 11px; color: #888;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <span style="color: #666; display: block; font-size: 10px; margin-bottom: 2px;">Depth</span>
+                        <span id="engine-depth" style="color: #c3c3c0; font-weight: 600;">-</span>
+                    </div>
+                    <div>
+                        <span style="color: #666; display: block; font-size: 10px; margin-bottom: 2px;">Nodes</span>
+                        <span id="engine-nodes" style="color: #c3c3c0; font-weight: 600;">-</span>
+                    </div>
+                </div>
+            </div>
+            
             <div class="move-history" id="move-history">
                 <!-- Move history logs go here -->
             </div>
@@ -180,6 +241,7 @@ $username = get_user()['username'];
 </div>
 
 <script src="public/chess.min.js"></script>
+<script src="public/chess-ai.js"></script>
 <script src="public/script.js"></script>
 <script src="../assets/js/notifications.js"></script>
 
