@@ -42,9 +42,23 @@ function fetchAPI(action, payload = {}) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-    }).then(r => r.json()).catch(err => {
-        console.error(err);
-        return { success: false, error: 'Network Error' };
+    })
+    .then(r => {
+        if (!r.ok) {
+            throw new Error(`HTTP ${r.status}`);
+        }
+        return r.json();
+    })
+    .then(data => {
+        if (!data) {
+            console.error('Empty response from API');
+            return { success: false, error: 'Empty response' };
+        }
+        return data;
+    })
+    .catch(err => {
+        console.error('API Error:', action, err);
+        return { success: false, error: 'Network Error: ' + err.message };
     });
 }
 
@@ -1448,7 +1462,11 @@ function challengePlayer(opponentUsername, btnEl) {
     btnEl.innerText = 'Creating...';
     btnEl.disabled = true;
     
+    console.log('🎯 Challenging player:', opponentUsername);
+    
     fetchAPI('create_room', { target_opponent: opponentUsername }).then(data => {
+        console.log('📡 API Response:', data);
+        
         if (data.success) {
             currentRoomId = data.room_code;
             myColor = 'w';
@@ -1468,8 +1486,15 @@ function challengePlayer(opponentUsername, btnEl) {
         } else {
             btnEl.innerText = 'Challenge';
             btnEl.disabled = false;
-            alert('Failed to start challenge');
+            const errorMsg = data.error || 'Unknown error';
+            console.error('❌ Challenge failed:', errorMsg);
+            alert('Failed to start challenge: ' + errorMsg);
         }
+    }).catch(err => {
+        console.error('❌ Challenge request error:', err);
+        btnEl.innerText = 'Challenge';
+        btnEl.disabled = false;
+        alert('Failed to start challenge: Network error');
     });
 }
 

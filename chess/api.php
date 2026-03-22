@@ -20,13 +20,69 @@ try {
     }
 
     if ($action === 'create_room') {
-        $username = $input['username'] ?? get_user()['username'];
+        // Get username from payload or from session
+        $username = $input['username'] ?? null;
+        
+        if (!$username) {
+            $user = get_user();
+            if (!$user || !isset($user['username'])) {
+                echo json_encode(['success' => false, 'error' => 'Could not identify user']);
+                exit;
+            }
+            $username = $user['username'];
+        }
+        
         $target = $input['target_opponent'] ?? null;
+        
+        if (!$username) {
+            echo json_encode(['success' => false, 'error' => 'Username is empty']);
+            exit;
+        }
+        
         $roomCode = strtoupper(substr(md5(uniqid()), 0, 6)); // 6 letter code
         
-        // Use INSERT IGNORE to prevent duplicate key errors
-        $stmt = $pdo->prepare("INSERT INTO chess_rooms (room_code, player_w_name, player_b_name, status, is_live, created_at) VALUES (?, ?, ?, 'waiting', 0, NOW())");
-        $stmt->execute([$roomCode, $username, $target]);
+        // Check if is_live column exists, if not add it
+        try {
+            $tableInfo = $pdo->query("DESCRIBE chess_rooms")->fetchAll(PDO::FETCH_ASSOC);
+            $hasIsLive = false;
+            foreach ($tableInfo as $col) {
+                if ($col['Field'] === 'is_live') {
+                    $hasIsLive = true;
+                    break;
+                }
+            }
+            
+            if (!$hasIsLive) {
+                $pdo->exec("ALTER TABLE chess_rooms ADD COLUMN is_live TINYINT DEFAULT 0");
+            }
+        } catch (Exception $e) {
+            // Column might already exist, continue
+        }
+        
+        // Try to insert into chess_rooms
+        try {
+            $stmt = $pdo->prepare("INSERT INTO chess_rooms (room_code, player_w_name, player_b_name, status, is_live, created_at) VALUES (?, ?, ?, 'waiting', 0, NOW())");
+            $result = $stmt->execute([$roomCode, $username, $target]);
+            
+            if (!$result) {
+                echo json_encode(['success' => false, 'error' => 'Failed to create room']);
+                exit;
+            }
+        } catch (PDOException $e) {
+            // Try without is_live column
+            try {
+                $stmt = $pdo->prepare("INSERT INTO chess_rooms (room_code, player_w_name, player_b_name, status, created_at) VALUES (?, ?, ?, 'waiting', NOW())");
+                $result = $stmt->execute([$roomCode, $username, $target]);
+                
+                if (!$result) {
+                    echo json_encode(['success' => false, 'error' => 'Failed to create room']);
+                    exit;
+                }
+            } catch (PDOException $e2) {
+                echo json_encode(['success' => false, 'error' => 'Database error: ' . $e2->getMessage()]);
+                exit;
+            }
+        }
         
         header('Cache-Control: no-cache');
         echo json_encode(['success' => true, 'room_code' => $roomCode, 'color' => 'w']);
