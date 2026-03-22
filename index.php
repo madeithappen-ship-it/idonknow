@@ -447,6 +447,142 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
             justify-content: center;
         }
 
+        /* APK Download Section */
+        .apk-download-section {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(244, 67, 54, 0.1) 100%);
+            border: 2px solid rgba(255, 152, 0, 0.3);
+            border-radius: 16px;
+            padding: 60px 20px;
+            margin: 60px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .apk-download-section h2 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #FF9800, #FF5722);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+        }
+
+        .apk-download-section > p {
+            text-align: center;
+            font-size: 16px;
+            color: #ccc;
+            margin-bottom: 40px;
+        }
+
+        .apk-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .apk-option {
+            background: rgba(255, 152, 0, 0.1);
+            border: 1px solid rgba(255, 152, 0, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .apk-option:hover {
+            border-color: rgba(255, 152, 0, 0.6);
+            background: rgba(255, 152, 0, 0.15);
+            transform: translateY(-5px);
+        }
+
+        .apk-option-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .apk-option h3 {
+            font-size: 20px;
+            color: #FF9800;
+            margin-bottom: 8px;
+        }
+
+        .apk-option > p {
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
+        .apk-steps {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid #FF9800;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .apk-steps ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .apk-steps li {
+            margin-bottom: 8px;
+            color: #ddd;
+            font-size: 14px;
+        }
+
+        .btn-apk {
+            display: inline-block;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .btn-apk-primary {
+            background: linear-gradient(135deg, #FF9800, #FF5722);
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(255, 152, 0, 0.3);
+        }
+
+        .btn-apk-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(255, 152, 0, 0.4);
+        }
+
+        .btn-apk-secondary {
+            background: rgba(255, 152, 0, 0.2);
+            color: #FF9800;
+            border: 2px solid #FF9800;
+        }
+
+        .btn-apk-secondary:hover {
+            background: #FF9800;
+            color: #000;
+            transform: translateY(-2px);
+        }
+
+        .apk-note {
+            font-size: 13px;
+            color: #aaa;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 152, 0, 0.2);
+        }
+
+        .apk-note strong {
+            color: #FF9800;
+        }
+
+        .apk-comparison table tr:first-child th {
+            font-weight: 600;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .download-container {
@@ -470,6 +606,22 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
             .btn-download {
                 width: 100%;
                 justify-content: center;
+            }
+
+            .apk-options {
+                grid-template-columns: 1fr;
+            }
+
+            .apk-download-section h2 {
+                font-size: 28px;
+            }
+
+            .apk-option {
+                padding: 20px;
+            }
+
+            .btn-apk {
+                width: 100%;
             }
         }
         
@@ -624,6 +776,88 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- APK Download Section -->
+        <section class="apk-download-section">
+            <div class="container">
+                <h2>📥 Download Android APK</h2>
+                <p>Install Side Quest directly as an Android app file</p>
+
+                <div class="apk-options">
+                    <!-- Option 1: PWA Builder -->
+                    <div class="apk-option">
+                        <div class="apk-option-icon">🚀</div>
+                        <h3>Generate APK (Free)</h3>
+                        <p>Create a native Android installation file</p>
+                        
+                        <div class="apk-steps">
+                            <ol>
+                                <li>Click the button below</li>
+                                <li>Wait for APK to generate (2-3 minutes)</li>
+                                <li>Download the .apk file</li>
+                                <li>Open on Android & tap to install</li>
+                            </ol>
+                        </div>
+
+                        <a href="https://www.pwabuilder.com/generate" target="_blank" class="btn-apk btn-apk-primary">
+                            🌐 Open PWA Builder
+                        </a>
+
+                        <div class="apk-note">
+                            <strong>Note:</strong> Paste our URL: <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">https://sidequest.app</code>
+                        </div>
+                    </div>
+
+                    <!-- Option 2: Direct Install -->
+                    <div class="apk-option">
+                        <div class="apk-option-icon">⚡</div>
+                        <h3>Quick Install</h3>
+                        <p>Use the browser's native install feature</p>
+                        
+                        <div class="apk-steps">
+                            <ol>
+                                <li>Open on Android phone</li>
+                                <li>Tap menu <strong>(⋮)</strong></li>
+                                <li>Select "Install app"</li>
+                                <li>Done! App on home screen</li>
+                            </ol>
+                        </div>
+
+                        <button class="btn-apk btn-apk-secondary" onclick="if(window.pwaInstaller) window.pwaInstaller.promptInstall(); else alert('Click the Install button in navbar')">
+                            ⬇️ Install App Now
+                        </button>
+
+                        <div class="apk-note">
+                            <strong>Fastest:</strong> Works instantly on any Android phone
+                        </div>
+                    </div>
+                </div>
+
+                <div class="apk-comparison" style="margin-top: 40px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                    <h3>Which Should I Use?</h3>
+                    <table style="width: 100%; text-align: left; margin-top: 15px;">
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <th style="padding: 10px; color: #4CAF50;">Method</th>
+                            <th style="padding: 10px; color: #4CAF50;">Installation</th>
+                            <th style="padding: 10px; color: #4CAF50;">Updates</th>
+                            <th style="padding: 10px; color: #4CAF50;">Best For</th>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <td style="padding: 10px;">📥 Generated APK</td>
+                            <td style="padding: 10px;">Via Google Play</td>
+                            <td style="padding: 10px;">Manual</td>
+                            <td style="padding: 10px;">Distribution</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px;">⚡ Quick Install</td>
+                            <td style="padding: 10px;">Instant</td>
+                            <td style="padding: 10px;">Automatic</td>
+                            <td style="padding: 10px;">Users</td>
+                        </tr>
+                    </table>
                 </div>
             </div>
         </section>
