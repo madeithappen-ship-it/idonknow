@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Side Quest</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #fff;
+        }
+        
+        .navbar-logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .navbar h1 {
+            font-size: 24px;
+            color: #4CAF50;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        @media (max-width: 600px) {
+            .navbar-logo {
+                height: 32px;
+            }
+            .navbar h1 {
+                font-size: 18px;
+            }
+            .navbar {
+                padding: 15px 20px;
+            }
+        }
+        
+        .container {
+            max-width: 600px;
+            text-align: center;
+            margin-top: 80px;
+        }
+        
+        .offline-icon {
+            font-size: 80px;
+            margin-bottom: 30px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        h1 {
+            font-size: 36px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #4CAF50, #2196F3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        p {
+            font-size: 18px;
+            color: #ccc;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .offline-tips {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            backdrop-filter: blur(10px);
+            text-align: left;
+        }
+        
+        .offline-tips h2 {
+            font-size: 18px;
+            color: #4CAF50;
+            margin-bottom: 15px;
+        }
+        
+        .offline-tips ul {
+            list-style: none;
+        }
+        
+        .offline-tips li {
+            padding: 10px 0;
+            color: #ddd;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .offline-tips li:before {
+            content: "✓";
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 10px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
+        }
+        
+        .button.secondary {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
+        }
+        
+        .button.secondary:hover {
+            background: #4CAF50;
+            color: #000;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+        
+        footer {
+            margin-top: 40px;
+            padding-bottom: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <a href="./index.php" class="navbar-brand">
+            <img src="./assets/images/logo.png" alt="Side Quest Logo" class="navbar-logo" loading="lazy">
+            <h1>🎮 Side Quest</h1>
+        </a>
+    </nav>
+
+    <!-- Offline Content -->
+    <div class="container">
+        <div class="offline-icon">📡</div>
+        
+        <h1>You're Offline</h1>
+        <p>Looks like you've lost your internet connection. Don't worry, Side Quest is still here!</p>
+        
+        <div class="offline-tips">
+            <h2>What You Can Do</h2>
+            <ul>
+                <li>The app continues to work offline</li>
+                <li>View previously cached content</li>
+                <li>Your progress is saved locally</li>
+                <li>Changes will sync when online</li>
+            </ul>
+        </div>
+        
+        <p style="color: #999; font-size: 14px; margin-bottom: 30px;">
+            <strong>Tip:</strong> Side Quest is installed as an app on your device, so it works even without internet!
+        </p>
+        
+        <button class="button secondary" onclick="window.location.reload()">
+            🔄 Retry Connection
+        </button>
+        
+        <button class="button" onclick="window.history.back()">
+            ← Go Back
+        </button>
+        
+        <footer>
+            <p>Connected devices will sync automatically when you're back online</p>
+        </footer>
+    </div>
+
+    <script>
+        // Check for connection restoration
+        window.addEventListener('online', () => {
+            console.log('Connection restored!');
+            // Optionally reload or show notification
+            document.body.style.opacity = '0.7';
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
+
+        // Listen for app updates
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.controller?.postMessage({ type: 'SKIP_WAITING' });
+        }
+    </script>
+</body>
+</html>

@@ -329,5 +329,8 @@ $ratings = $ratings_result ? $ratings_result->fetch() : ['bullet_rating' => 1200
     }
 </script>
 
+<!-- Progressive Web App Helper -->
+<script src="../assets/js/pwa-helper.js"></script>
+
 </body>
 </html>

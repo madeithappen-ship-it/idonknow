@@ -1,22 +1,29 @@
 /**
- * Service Worker for Push Notifications
- * Handles background notifications and offline functionality
+ * Progressive Web App Service Worker
+ * Handles offline functionality, caching, and push notifications
+ * Enables fast loading and offline-first experience
  */
 
 const CACHE_NAME = 'side-quest-v1';
+const OFFLINE_URL = './offline.html';
+
+// URLs to cache on install
 const urlsToCache = [
-  '/boringlife/',
-  '/boringlife/index.php',
-  '/boringlife/assets/css/style.css',
-  '/boringlife/assets/js/cookies.js'
+  './',
+  './index.php',
+  './manifest.json',
+  './offline.html',
+  './assets/images/favicon.png',
+  './assets/images/icon-192.png',
+  './assets/images/icon-512.png'
 ];
 
-// Install event - cache assets
+// Install event - cache essential assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(urlsToCache).catch(() => {
-        // Not all URLs may be available, that's okay
+        console.log('Initial cache failed - some resources unavailable');
         return Promise.resolve();
       });
     })
@@ -24,7 +31,7 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old cache versions
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -40,32 +47,65 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - network first for dynamic content, cache first for static
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') {
+  const { request } = event;
+  
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
     return;
   }
 
+  // Handle PHP files and API calls - network first
+  if (request.url.includes('.php') || request.url.includes('/api/')) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // Cache successful responses
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Return offline page if network fails
+          return caches.match(OFFLINE_URL);
+        })
+    );
+    return;
+  }
+
+  // Handle static assets - cache first
   event.respondWith(
-    caches.match(event.request).then(response => {
-      if (response) {
-        return response;
-      }
-      return fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'basic') {
+    caches.match(request)
+      .then(response => {
+        // Return cached response if available
+        if (response) {
           return response;
         }
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseToCache);
+
+        // Try network for uncached assets
+        return fetch(request).then(response => {
+          // Don't cache non-successful responses
+          if (!response || response.status !== 200) {
+            return response;
+          }
+
+          // Cache successful responses
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(request, responseClone);
+          });
+          return response;
         });
-        return response;
-      });
-    })
-    .catch(() => {
-      // Return offline page if available
-      return caches.match('/boringlife/index.php');
-    })
+      })
+      .catch(() => {
+        // Return cached response or offline page on network failure
+        return caches.match(request) || caches.match(OFFLINE_URL);
+      })
   );
 });
 
@@ -80,8 +120,8 @@ self.addEventListener('push', event => {
     const data = event.data.json();
     const options = {
       body: data.body || 'New notification',
-      icon: data.icon || '/boringlife/assets/images/icon.svg',
-      badge: '/boringlife/assets/images/badge.svg',
+      icon: data.icon || './assets/images/icon-192.png',
+      badge: './assets/images/favicon.png',
       tag: data.tag || 'notification',
       requireInteraction: data.requireInteraction || false,
       actions: data.actions || [
@@ -98,6 +138,54 @@ self.addEventListener('push', event => {
     );
   } catch (e) {
     console.error('Error parsing push notification:', e);
+    event.waitUntil(
+      self.registration.showNotification('Side Quest', {
+        body: event.data.text(),
+        icon: './assets/images/icon-192.png'
+      })
+    );
+  }
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+
+  if (event.action === 'open' || !event.action) {
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then(clientList => {
+          // Check if app is already open
+          for (let client of clientList) {
+            if (client.url === '/' && 'focus' in client) {
+              return client.focus();
+            }
+          }
+          // Open app if not running
+          if (clients.openWindow) {
+            return clients.openWindow(event.notification.data.url || './index.php');
+          }
+        })
+    );
+  }
+});
+
+// Periodic background sync for game updates
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-games') {
+    event.waitUntil(syncGameData());
+  }
+});
+
+async function syncGameData() {
+  try {
+    const response = await fetch('./chess/api_professional.php?action=sync');
+    return response.json();
+  } catch (error) {
+    console.log('Background sync failed:', error);
+  }
+}
+
     event.waitUntil(
       self.registration.showNotification('Side Quest Notification', {
         body: event.data.text()
