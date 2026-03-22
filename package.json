@@ -1,0 +1,21 @@
+{
+  "name": "boringlife",
+  "version": "1.0.0",
+  "description": "Boring Life - Side Quest Android App",
+  "main": "index.php",
+  "scripts": {
+    "build": "echo 'Building app...'",
+    "serve": "php -S localhost:8000"
+  },
+  "keywords": [
+    "android",
+    "pwa",
+    "app"
+  ],
+  "author": "Boring Life",
+  "license": "MIT",
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^8.2.0"
+  }
+}
