@@ -77,7 +77,7 @@ function get_ai_response($text, $knowledge) {
     }
     
     // Fallback response
-    return "I'm not sure I understand that. Try asking about XP, Quests, Chess, or how to install the app. You can also switch to Live Support to talk to a human!";
+    return "I'm not sure I understand that. Try asking about XP, Quests, Chess, or how to install the app. I'm here to help with any site-related questions!";
 }
 
 echo json_encode(['success' => false, 'error' => 'Invalid action']);

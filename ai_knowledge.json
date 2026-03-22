@@ -12,7 +12,7 @@
     },
     "faqs": [
         {
-            "keywords": ["xp", "level", "earn", "points"],
+            "keywords": ["xp", "level", "earn", "points", "how to level up", "get xp"],
             "answer": "You earn XP by completing side quests! Different quests have different XP rewards based on their difficulty. Check the 'Quests' tab on your dashboard to see available tasks."
         },
         {
@@ -20,8 +20,8 @@
             "answer": "Side Quests are real-world tasks you can complete to earn rewards on the platform. They range from simple habits to adventurous challenges."
         },
         {
-            "keywords": ["chess", "play", "play chess"],
-            "answer": "You can play chess by clicking 'Chess' in the navbar or sidebar. We offer both a standard experience and a 'Professional' mode with ELO ratings and advanced analysis."
+            "keywords": ["chess", "play", "play chess", "game", "chess link", "challenge"],
+            "answer": "You can play chess by clicking 'Chess' in the navbar or sidebar. We offer both a standard experience and a 'Professional' mode with ELO ratings and advanced analysis. You can also create challenge links to play with friends!"
         },
         {
             "keywords": ["install", "app", "mobile", "android", "ios"],
