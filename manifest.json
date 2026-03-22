@@ -2,7 +2,7 @@
   "name": "Side Quest - Chess & Games",
   "short_name": "Side Quest",
   "description": "Gamified real-life challenges with multiplayer chess",
-  "start_url": "/boringlife/index.php",
+  "start_url": "./index.php",
   "display": "standalone",
   "background_color": "#0f0f1e",
   "theme_color": "#81b64c",
@@ -28,7 +28,7 @@
       "name": "Play Chess",
       "short_name": "Chess",
       "description": "Start a new chess game",
-      "url": "/boringlife/chess/index.php",
+      "url": "./chess/index.php",
       "icons": [
         {
           "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><text x='48' y='70' font-size='60' fill='%2381b64c' text-anchor='middle'>♟</text></svg>",

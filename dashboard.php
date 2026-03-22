@@ -144,8 +144,8 @@ $token = csrf_token();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Side Quest</title>
-    <link rel="manifest" href="/boringlife/manifest.json">
-    <link rel="icon" type="image/png" href="/boringlife/assets/images/favicon.png">
+    <link rel="icon" type="image/png" href="./assets/images/favicon.png">
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#4CAF50">
     <style>
         * {
@@ -534,8 +534,8 @@ $token = csrf_token();
 </head>
 <body>
     <div class="navbar">
-        <a href="/boringlife/dashboard.php" class="navbar-brand">
-            <img src="/boringlife/assets/images/logo.png" alt="Side Quest Logo" class="navbar-logo">
+        <a href="./dashboard.php" class="navbar-brand">
+            <img src="./assets/images/logo.png" alt="Side Quest Logo" class="navbar-logo">
             <h1>⚡ Side Quest</h1>
         </a>
         <div class="user-menu">

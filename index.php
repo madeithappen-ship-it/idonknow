@@ -30,7 +30,8 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Side Quest - Gamified Real-Life Challenges</title>
-    <link rel="manifest" href="/boringlife/manifest.json">
+    <link rel="icon" type="image/png" href="./assets/images/favicon.png">
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#4CAF50">
     <style>
         * {
@@ -244,8 +245,8 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar">
-        <a href="/boringlife/" class="navbar-brand">
-            <img src="/boringlife/assets/images/logo.png" alt="Side Quest Logo" class="navbar-logo">
+        <a href="./" class="navbar-brand">
+            <img src="./assets/images/logo.png" alt="Side Quest Logo" class="navbar-logo">
             <h1>🎮 Side Quest</h1>
         </a>
         <div class="nav-links">

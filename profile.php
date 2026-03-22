@@ -72,7 +72,7 @@ if ($target_user['last_seen'] && strtotime($target_user['last_seen']) > time() -
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Profile - Side Quest</title>
-    <link rel="icon" type="image/png" href="/boringlife/assets/images/favicon.png">
+    <link rel="icon" type="image/png" href="./assets/images/favicon.png">
     <style>
         body, html { margin: 0; padding: 0; background: #0f172a; color: #fff; font-family: sans-serif; }
         .container { max-width: 600px; margin: 50px auto; padding: 20px; background: #1e293b; border-radius: 8px; border: 1px solid #334155; }

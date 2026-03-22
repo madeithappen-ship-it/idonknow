@@ -25,7 +25,7 @@ $ratings = $ratings_result ? $ratings_result->fetch() : ['bullet_rating' => 1200
     <meta name="apple-mobile-web-app-capable" content="true">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Professional Chess - Side Quest</title>
-    <link rel="icon" type="image/png" href="/boringlife/assets/images/favicon.png">
+    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="public/style.css">
     <style>
