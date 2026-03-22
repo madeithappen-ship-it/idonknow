@@ -203,13 +203,16 @@ $is_chat_admin = is_admin();
     
     <div id="chat-window">
         <div id="chat-header">
-            <span id="chat-title">Live Support</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <span id="chat-title">Site Assistant</span>
+                <button id="ai-mode-toggle" onclick="toggleAIChatMode()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; cursor: pointer; transition: all 0.2s;">Switch to Live</button>
+            </div>
             <span style="cursor:pointer; font-size:18px; padding: 0 5px;" onclick="toggleChat()">×</span>
         </div>
         <div id="chat-body"></div>
         <div id="chat-typing-indicator" style="display:none;"><span id="typing-text">Someone</span> is typing<span class="typing-dots"></span></div>
         <div id="chat-input-area" style="display:none;">
-            <input type="text" id="chat-input" placeholder="Type a message..." oninput="handleTyping()" onkeypress="if(event.key === 'Enter') sendChat()">
+            <input type="text" id="chat-input" placeholder="Ask AI anything..." oninput="handleTyping()" onkeypress="if(event.key === 'Enter') sendChat()">
             <button id="chat-send" onclick="sendChat()">➣</button>
         </div>
     </div>
@@ -220,6 +223,27 @@ const _isAdminChat = <?php echo $is_chat_admin ? 'true' : 'false'; ?>;
 let _activeChatUser = 0;
 let _lastChatMsgId = 0;
 let _isChatOpen = false;
+let _isAIMode = true; // Use AI by default for non-admins
+
+function toggleAIChatMode() {
+    _isAIMode = !_isAIMode;
+    const title = document.getElementById('chat-title');
+    const toggle = document.getElementById('ai-mode-toggle');
+    const input = document.getElementById('chat-input');
+    
+    if (_isAIMode) {
+        title.innerText = 'Site Assistant';
+        toggle.innerText = 'Switch to Live';
+        input.placeholder = 'Ask AI anything...';
+        document.getElementById('chat-body').innerHTML = '<div style="text-align:center; color:#666; margin-top:20px; font-size:12px;">AI Assistant is ready!</div>';
+        _lastChatMsgId = 0; // Reset for AI chat
+    } else {
+        title.innerText = 'Live Support';
+        toggle.innerText = 'Switch to AI';
+        input.placeholder = 'Type a message...';
+        loadChatMessages(); // Load human chat history
+    }
+}
 
 function escapeHtml(unsafe) {
     return (unsafe||'').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -483,11 +507,41 @@ function loadChatMessages() {
     });
 }
 
-function sendChat() {
-    const input = document.getElementById('chat-input');
-    const text = input.value.trim();
-    if (!text) return;
-    
+function appendAIMessage(text, type) {
+    const body = document.getElementById('chat-body');
+    let div = document.createElement('div');
+    div.className = 'chat-msg ' + (type === 'user' ? 'msg-mine' : 'msg-theirs');
+    div.innerHTML = linkifyText(text);
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+}
+
+    if (_isAIMode && !_isAdminChat) {
+        appendAIMessage(text, 'user');
+        input.value = '';
+        
+        // Show typing indicator
+        const ind = document.getElementById('chat-typing-indicator');
+        document.getElementById('typing-text').innerText = "AI Assistant";
+        ind.style.display = 'block';
+        
+        const fd = new FormData();
+        fd.append('action', 'chat');
+        fd.append('message', text);
+        
+        fetch('ai_assistant_api.php', {method: 'POST', body: fd})
+            .then(r => r.json())
+            .then(d => {
+                ind.style.display = 'none';
+                if (d.success) {
+                    appendAIMessage(d.response, 'ai');
+                } else {
+                    appendAIMessage("Sorry, I'm having trouble connecting to my brain right now.", 'ai');
+                }
+            });
+        return;
+    }
+
     const fd = new FormData();
     fd.append('action', 'send');
     fd.append('message', text);
@@ -500,6 +554,11 @@ function sendChat() {
 let _lastUnreadCount = 0;
 
 function pollChat() {
+    if (_isAIMode && !_isAdminChat) {
+        // AI chat doesn't need aggressive polling of another API
+        setTimeout(pollChat, 4000);
+        return;
+    }
     if (_isChatOpen) {
         if (_isAdminChat && _activeChatUser === 0) {
             loadChatConversations();

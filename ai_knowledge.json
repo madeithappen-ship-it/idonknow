@@ -1,0 +1,41 @@
+{
+    "site_info": {
+        "name": "Side Quest",
+        "description": "A platform for turning your boring life into an adventure by completing real-world side quests.",
+        "features": [
+            "Chess (Standard & Professional)",
+            "Quest System (levels, XP, rewards)",
+            "Social features (friends, groups, chat)",
+            "Games (Dice, Solitaire, Wheel of Fortune)",
+            "PWA support (Installable on mobile)"
+        ]
+    },
+    "faqs": [
+        {
+            "keywords": ["xp", "level", "earn", "points"],
+            "answer": "You earn XP by completing side quests! Different quests have different XP rewards based on their difficulty. Check the 'Quests' tab on your dashboard to see available tasks."
+        },
+        {
+            "keywords": ["quest", "sidequest", "what is"],
+            "answer": "Side Quests are real-world tasks you can complete to earn rewards on the platform. They range from simple habits to adventurous challenges."
+        },
+        {
+            "keywords": ["chess", "play", "play chess"],
+            "answer": "You can play chess by clicking 'Chess' in the navbar or sidebar. We offer both a standard experience and a 'Professional' mode with ELO ratings and advanced analysis."
+        },
+        {
+            "keywords": ["install", "app", "mobile", "android", "ios"],
+            "answer": "The platform is a Progressive Web App (PWA). You can install it on your mobile device by selecting 'Add to Home Screen' in your browser menu (Chrome) or 'Share > Add to Home Screen' (Safari)."
+        },
+        {
+            "keywords": ["help", "support", "contact"],
+            "answer": "If you need human assistance, you can switch the chat mode to 'Live Support' to speak with an administrator."
+        }
+    ],
+    "quest_tips": {
+        "easy": "Easy quests are great for beginners. They usually involve simple daily tasks.",
+        "medium": "Medium quests require a bit more effort and often focus on habit building.",
+        "hard": "Hard quests are challenges that might take a few days or significant effort to complete.",
+        "insane": "Insane quests are major life adventures or very difficult challenges!"
+    }
+}
