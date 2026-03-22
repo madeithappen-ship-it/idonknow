@@ -30,6 +30,8 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Side Quest - Gamified Real-Life Challenges</title>
+    <link rel="manifest" href="/boringlife/manifest.json">
+    <meta name="theme-color" content="#4CAF50">
     <style>
         * {
             margin: 0;
@@ -58,10 +60,34 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
             z-index: 100;
         }
         
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .navbar-logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
         .navbar h1 {
             font-size: 24px;
             color: #4CAF50;
             font-weight: 700;
+            margin: 0;
+        }
+
+        @media (max-width: 600px) {
+            .navbar-logo {
+                height: 32px;
+            }
+            .navbar h1 {
+                font-size: 18px;
+            }
         }
         
         .nav-links {
@@ -218,7 +244,10 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar">
-        <h1>🎮 Side Quest</h1>
+        <a href="/boringlife/" class="navbar-brand">
+            <img src="/boringlife/assets/images/logo.png" alt="Side Quest Logo" class="navbar-logo">
+            <h1>🎮 Side Quest</h1>
+        </a>
         <div class="nav-links">
             <a href="login.php" class="btn-login">Login</a>
             <a href="register.php" class="btn-register">Register</a>
@@ -292,6 +321,9 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
 
     <!-- Live Chat System -->
     <script src="assets/js/live-chat.js"></script>
+    
+    <!-- Push Notifications -->
+    <script src="assets/js/push-notifications.js"></script>
     
     <!-- Cookie Consent Banner -->
     <script src="assets/js/cookies.js"></script>

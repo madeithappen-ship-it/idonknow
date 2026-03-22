@@ -16,6 +16,7 @@ $username = get_user()['username'];
     <meta name="apple-mobile-web-app-capable" content="true">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Play Chess Online</title>
+    <link rel="icon" type="image/png" href="/boringlife/assets/images/favicon.png">
     <!-- Use FontAwesome for icons like Chess.com -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="public/style.css">

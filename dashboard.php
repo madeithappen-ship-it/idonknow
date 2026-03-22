@@ -144,6 +144,9 @@ $token = csrf_token();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Side Quest</title>
+    <link rel="manifest" href="/boringlife/manifest.json">
+    <link rel="icon" type="image/png" href="/boringlife/assets/images/favicon.png">
+    <meta name="theme-color" content="#4CAF50">
     <style>
         * {
             margin: 0;
@@ -172,10 +175,34 @@ $token = csrf_token();
             align-items: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .navbar-logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
         
         .navbar h1 {
             font-size: 20px;
             color: #4CAF50;
+            margin: 0;
+        }
+
+        @media (max-width: 600px) {
+            .navbar-logo {
+                height: 32px;
+            }
+            .navbar h1 {
+                font-size: 16px;
+            }
         }
         
         .user-menu {
@@ -507,7 +534,10 @@ $token = csrf_token();
 </head>
 <body>
     <div class="navbar">
-        <h1>⚡ Side Quest</h1>
+        <a href="/boringlife/dashboard.php" class="navbar-brand">
+            <img src="/boringlife/assets/images/logo.png" alt="Side Quest Logo" class="navbar-logo">
+            <h1>⚡ Side Quest</h1>
+        </a>
         <div class="user-menu">
             <div class="user-info" style="display:flex; align-items:center; gap: 10px;">
                 <a href="profile.php" style="display:flex; align-items:center; gap: 10px; color:#fff; text-decoration:none;">
@@ -1155,6 +1185,9 @@ $token = csrf_token();
     <script src="assets/js/friends.js"></script>
     <script src="assets/js/notifications.js"></script>
     <script src="assets/js/live-chat.js"></script>
+    
+    <!-- Push Notifications -->
+    <script src="assets/js/push-notifications.js"></script>
     
     <!-- Cookie Consent Banner -->
     <script src="assets/js/cookies.js"></script>
