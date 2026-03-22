@@ -507,14 +507,10 @@ function loadChatMessages() {
     });
 }
 
-function appendAIMessage(text, type) {
-    const body = document.getElementById('chat-body');
-    let div = document.createElement('div');
-    div.className = 'chat-msg ' + (type === 'user' ? 'msg-mine' : 'msg-theirs');
-    div.innerHTML = linkifyText(text);
-    body.appendChild(div);
-    body.scrollTop = body.scrollHeight;
-}
+function sendChat() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
 
     if (_isAIMode && !_isAdminChat) {
         appendAIMessage(text, 'user');
