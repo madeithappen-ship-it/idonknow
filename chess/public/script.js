@@ -383,15 +383,21 @@ function finishMove(move) {
 // ============================================================================
 
 async function makeAIMove() {
-    if (!chessAI || chess.game_over()) return;
+    if (!chessAI || chess.game_over()) {
+        console.log('Cannot make AI move: game over or AI not ready');
+        return;
+    }
     
     aiThinking = true;
     document.getElementById('btn-hint').disabled = true;
     
     try {
+        console.log('🤖 AI thinking...');
         const { move, analysis } = await chessAI.getAIMove(chess.fen(), 800);
         
         if (move && move !== '(none)') {
+            console.log('✅ AI move decided:', move);
+            
             // Parse UCI move to algebraic
             const from = move.substring(0, 2);
             const to = move.substring(2, 4);
@@ -404,6 +410,7 @@ async function makeAIMove() {
             });
             
             if (moveObj) {
+                console.log('✓ Move executed:', moveObj.san);
                 updateBoard();
                 clearHighlights();
                 document.querySelector(`[data-square="${moveObj.from}"]`)?.classList.add('last-move');
@@ -413,14 +420,19 @@ async function makeAIMove() {
                 // Update previous evaluation for next move analysis
                 if (analysis && analysis.score !== null) {
                     previousEvaluation = analysis.score;
+                    console.log('📊 Position evaluation:', analysis.score);
                 }
                 
                 updateEvaluationBar();
                 checkLocalGameOver();
+            } else {
+                console.error('❌ Invalid move returned by AI:', move);
             }
+        } else {
+            console.warn('⚠️ No move found by AI');
         }
     } catch (err) {
-        console.error('AI move error:', err);
+        console.error('❌ AI move error:', err);
     } finally {
         aiThinking = false;
         document.getElementById('btn-hint').disabled = false;
@@ -721,32 +733,35 @@ function startGameUI(isComputer, opponentName = 'Computer') {
 
 async function initializeAI() {
     try {
-        console.log('Initializing Chess AI...');
+        console.log('🚀 Initializing Chess AI...');
         chessAI = new ChessAI();
         
         chessAI.callbacks.onReady = () => {
-            console.log('✓ Stockfish engine ready!');
+            console.log('✅ Stockfish engine ready!');
             aiEnabled = true;
         };
         
         chessAI.callbacks.onBestMove = (move, analysis) => {
-            console.log('Best move:', move);
+            console.log('💡 Best move found:', move, 'Evaluation:', analysis?.score || 0);
         };
         
         chessAI.callbacks.onAnalysis = (analysis) => {
-            // Silently update analysis
+            // Silently update analysis - detailed logging available in worker
+            if (analysis && analysis.depth && analysis.depth % 5 === 0) {
+                console.log(`📊 Analysis depth: ${analysis.depth}, Score: ${analysis.score}`);
+            }
         };
         
         chessAI.callbacks.onError = (error) => {
-            console.error('AI Error:', error);
-            showNotification('AI engine error: ' + error, 'error');
+            console.error('⚠️ AI Error:', error);
+            showNotification('AI engine issue: ' + error, 'error');
         };
         
-        await chessAI.initialize();
-        console.log('✓ AI initialization complete');
-        return true;
+        const result = await chessAI.initialize();
+        console.log('✅ AI initialization ' + (result ? 'complete' : 'failed'));
+        return result;
     } catch (err) {
-        console.error('Failed to initialize AI:', err);
+        console.error('❌ Failed to initialize AI:', err);
         return false;
     }
 }
@@ -844,8 +859,22 @@ function showNotification(message, type = 'info') {
 // INITIALIZATION & EVENT LISTENERS
 // ============================================================================
 
+// Global debug function accessible from console
+window.debugChessAI = function() {
+    console.log('🔍 Running Chess AI Diagnostic...\n');
+    if (chessAI) {
+        chessAI.diagnose();
+    } else {
+        console.error('❌ ChessAI not initialized yet. Please start a game against computer first.');
+    }
+};
+
+// Show diagnostic command to user
+console.log('%c🎮 Chess AI Debug Command Available', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
+console.log('%cType: debugChessAI() to run diagnostics', 'color: #aaa; font-size: 12px;');
+
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Initializing Chess application...');
+    console.log('🎮 Initializing Chess application...');
     
     // Initialize AI engine
     await initializeAI();
@@ -868,6 +897,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById(targetId).classList.remove('hidden');
                 if (targetId === 'panel-players') {
                     loadPlayers();
+                } else if (targetId === 'panel-live') {
+                    loadLiveGames();
                 }
             }
         });

@@ -4,49 +4,79 @@
  * This worker runs in a separate thread to avoid blocking the UI
  */
 
+let engine = null;
 let engineReady = false;
 let engineInitialized = false;
 
-// Load Stockfish WASM
-importScripts('https://cdn.jsdelivr.net/npm/stockfish@14.1.0');
+// Load Stockfish WASM from CDN
+importScripts('https://cdn.jsdelivr.net/npm/stockfish@14.1.0/dist/stockfish.wasm.js');
 
-// Initialize Stockfish
-function initEngine() {
-    if (engineInitialized) return;
-    
-    try {
-        // Initialize Stockfish WASM
-        if (typeof Stockfish !== 'undefined') {
-            Stockfish().then(sf => {
-                engine = sf;
-                engine.onmessage = onEngineMessage;
-                
-                // Initial setup
-                engine.postMessage('uci');
-                engineInitialized = true;
-                
-                postMessage({
-                    type: 'engine-ready',
-                    status: true
-                });
-            }).catch(err => {
-                console.error('Failed to initialize Stockfish:', err);
-                postMessage({
-                    type: 'error',
-                    message: 'Failed to initialize Stockfish WASM engine'
-                });
-            });
-        }
-    } catch (err) {
-        console.error('Stockfish initialization error:', err);
-        postMessage({
-            type: 'error',
-            message: err.message
+// Prevent timing issues - wait for Stockfish to be available globally
+let stockfishPromise = null;
+
+function getStockfish() {
+    if (!stockfishPromise) {
+        stockfishPromise = new Promise((resolve, reject) => {
+            let attempts = 0;
+            const checkStockfish = () => {
+                if (typeof Stockfish !== 'undefined') {
+                    console.log('Stockfish found, initializing...');
+                    Stockfish().then(sf => {
+                        console.log('✓ Stockfish WASM loaded successfully');
+                        resolve(sf);
+                    }).catch(err => {
+                        console.error('Stockfish initialization error:', err);
+                        reject(err);
+                    });
+                } else if (attempts < 50) {
+                    attempts++;
+                    setTimeout(checkStockfish, 100);
+                } else {
+                    console.error('Stockfish not found after waiting');
+                    reject(new Error('Stockfish WASM not available after timeout'));
+                }
+            };
+            checkStockfish();
         });
     }
+    return stockfishPromise;
 }
 
-let engine = null;
+// Initialize Stockfish when worker starts
+function initEngine() {
+    if (engineInitialized) {
+        postMessage({
+            type: 'engine-ready',
+            status: true
+        });
+        return;
+    }
+    
+    getStockfish().then(sf => {
+        engine = sf;
+        engine.onmessage = onEngineMessage;
+        
+        // Send initial UCI commands
+        engine.postMessage('uci');
+        engine.postMessage('setoption name Skill Level value 10');
+        
+        engineInitialized = true;
+        engineReady = true;
+        
+        console.log('✓ Engine ready');
+        postMessage({
+            type: 'engine-ready',
+            status: true
+        });
+    }).catch(err => {
+        console.error('Engine initialization failed:', err);
+        postMessage({
+            type: 'error',
+            message: 'Failed to initialize Stockfish WASM engine: ' + err.message
+        });
+    });
+}
+
 let analysisCallback = null;
 
 function onEngineMessage(msg) {

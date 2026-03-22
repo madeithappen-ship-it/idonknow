@@ -35,33 +35,42 @@ class ChessAI {
      */
     async initialize() {
         try {
+            console.log('🚀 Starting Chess AI initialization...');
+            
             // Create worker with fallback for older browsers
             if (typeof Worker !== 'undefined') {
+                console.log('✓ Web Workers supported, creating Stockfish worker...');
                 this.worker = new Worker('public/stockfish-worker.js');
                 this.setupWorkerListeners();
+                
+                // Send init message
                 this.worker.postMessage({ type: 'init' });
+                console.log('✓ Init message sent to worker');
                 
                 // Wait for engine to be ready
                 return new Promise((resolve) => {
-                    const timeout = setTimeout(() => {
-                        console.warn('Stockfish initialization timeout - using fallback');
-                        resolve(true);
-                    }, 5000);
+                    let readyTimeout = setTimeout(() => {
+                        console.warn('⚠️ Stockfish initialization timeout - engine may not be responding');
+                        console.log('This can happen if Stockfish WASM CDN is slow or inaccessible');
+                        resolve(true); // Still resolve so game can start
+                    }, 8000);
                     
+                    const originalCallback = this.callbacks.onReady;
                     this.callbacks.onReady = () => {
-                        clearTimeout(timeout);
+                        console.log('✅ AI Engine ready!');
+                        clearTimeout(readyTimeout);
                         this.isReady = true;
-                        if (this.callbacks.onReady) this.callbacks.onReady();
+                        if (originalCallback) originalCallback();
                         resolve(true);
                     };
                 });
             } else {
-                throw new Error('Web Workers not supported');
+                throw new Error('Web Workers not supported in this browser');
             }
         } catch (err) {
-            console.error('AI Engine initialization error:', err);
+            console.error('❌ AI Engine initialization error:', err);
             if (this.callbacks.onError) {
-                this.callbacks.onError('Failed to initialize Stockfish WASM engine');
+                this.callbacks.onError('Failed to initialize Stockfish: ' + err.message);
             }
             return false;
         }
@@ -131,19 +140,34 @@ class ChessAI {
      * Analyze position and get best move
      */
     analyzePosition(fen) {
-        if (!this.worker || this.isAnalyzing) return;
+        if (!this.worker) {
+            console.error('❌ Worker not available');
+            return;
+        }
+        
+        if (this.isAnalyzing) {
+            console.warn('⚠️ Already analyzing a position');
+            return;
+        }
         
         this.isAnalyzing = true;
         this.bestMove = null;
         this.currentAnalysis = null;
         
-        this.setPosition(fen);
-        
-        const settings = this.difficultySettings[this.difficulty];
-        this.worker.postMessage({
-            type: 'go',
-            data: settings
-        });
+        try {
+            this.setPosition(fen);
+            
+            const settings = this.difficultySettings[this.difficulty];
+            console.log(`📊 Analyzing position with ${this.difficulty} difficulty (depth: ${settings.depth})`);
+            
+            this.worker.postMessage({
+                type: 'go',
+                data: settings
+            });
+        } catch (err) {
+            console.error('❌ Analysis error:', err);
+            this.isAnalyzing = false;
+        }
     }
     
     /**
@@ -179,17 +203,45 @@ class ChessAI {
      */
     async getAIMove(fen, delayMs = 800) {
         return new Promise((resolve) => {
+            // Fallback if engine isn't working
+            if (!this.worker || !this.isReady) {
+                console.warn('⚠️ AI Engine not ready, using random move fallback');
+                setTimeout(() => {
+                    resolve({ 
+                        move: '(none)',
+                        analysis: { score: 0, depth: 0 }
+                    });
+                }, delayMs);
+                return;
+            }
+            
             const startTime = Date.now();
+            let moveResolved = false;
             
             this.callbacks.onBestMove = (move, analysis) => {
+                if (moveResolved) return;
+                moveResolved = true;
+                
                 // Apply artificial delay if needed
                 const elapsed = Date.now() - startTime;
                 const remaining = Math.max(0, delayMs - elapsed);
                 
                 setTimeout(() => {
-                    resolve({ move, analysis });
+                    resolve({ move: move || '(none)', analysis });
                 }, remaining);
             };
+            
+            // Add timeout fallback in case bestmove never comes
+            setTimeout(() => {
+                if (!moveResolved) {
+                    moveResolved = true;
+                    console.warn('⚠️ AI move timeout, using fallback');
+                    resolve({ 
+                        move: '(none)',
+                        analysis: { score: 0, depth: 0 }
+                    });
+                }
+            }, delayMs + 2000);
             
             this.analyzePosition(fen);
         });
@@ -323,6 +375,55 @@ class ChessAI {
             this.worker.terminate();
             this.worker = null;
         }
+    }
+    
+    /**
+     * Diagnostic method for debugging AI issues
+     */
+    diagnose() {
+        const status = {
+            workerAvailable: !!this.worker,
+            engineReady: this.isReady,
+            isAnalyzing: this.isAnalyzing,
+            difficulty: this.difficulty,
+            difficulty_settings: this.difficultySettings[this.difficulty],
+            timestamp: new Date().toLocaleString()
+        };
+        
+        console.log('🔍 ChessAI Diagnostic Report:');
+        console.table(status);
+        
+        if (!this.worker) {
+            console.error('❌ CRITICAL: No worker available');
+            return;
+        }
+        
+        // Send a quick test position to see if engine responds
+        console.log('🧪 Running diagnostic test with starting position...');
+        const testFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+        
+        let testTimeout = setTimeout(() => {
+            console.error('❌ TIMEOUT: Engine did not respond to diagnostic test');
+            console.log('💡 Try: 1) Refresh page, 2) Check browser console for Stockfish errors, 3) Check network connection');
+        }, 5000);
+        
+        const originalCallback = this.callbacks.onBestMove;
+        let responseReceived = false;
+        
+        this.callbacks.onBestMove = (move, analysis) => {
+            if (responseReceived) return;
+            responseReceived = true;
+            
+            clearTimeout(testTimeout);
+            console.log('✅ Diagnostic test PASSED!');
+            console.log('  - Engine responded with move:', move);
+            console.log('  - Evaluation:', analysis?.score || 0, 'centipawns');
+            console.log('  - Depth reached:', analysis?.depth || 0);
+            
+            this.callbacks.onBestMove = originalCallback;
+        };
+        
+        this.analyzePosition(testFen);
     }
 }
 
