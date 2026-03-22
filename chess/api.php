@@ -429,6 +429,130 @@ try {
         echo json_encode(['success' => true, 'messages' => $messages]);
     }
     
+    elseif ($action === 'send_direct_message') {
+        $username = get_user()['username'];
+        $toUsername = $input['to_username'] ?? '';
+        $message = $input['message'] ?? '';
+        
+        if (empty($toUsername) || empty($message) || strlen($message) > 500) {
+            echo json_encode(['success' => false, 'error' => 'Invalid message']);
+            exit;
+        }
+        
+        // Get recipient info
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? AND status = 'active'");
+        $stmt->execute([$toUsername]);
+        $recipient = $stmt->fetch();
+        
+        if (!$recipient) {
+            echo json_encode(['success' => false, 'error' => 'User not found']);
+            exit;
+        }
+        
+        $user = get_user();
+        
+        // Create table if doesn't exist
+        $pdo->exec("CREATE TABLE IF NOT EXISTS direct_messages (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            from_user_id INT NOT NULL,
+            from_username VARCHAR(50) NOT NULL,
+            to_user_id INT NOT NULL,
+            to_username VARCHAR(50) NOT NULL,
+            message TEXT NOT NULL,
+            is_read TINYINT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_conversation (from_user_id, to_user_id, created_at),
+            KEY idx_to_user (to_user_id, is_read),
+            FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE
+        )");
+        
+        // Send message
+        $stmt = $pdo->prepare("INSERT INTO direct_messages (from_user_id, from_username, to_user_id, to_username, message) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$user['id'], $username, $recipient['id'], $toUsername, $message]);
+        
+        echo json_encode(['success' => true, 'message_id' => $pdo->lastInsertId()]);
+    }
+    
+    elseif ($action === 'get_direct_messages') {
+        $username = get_user()['username'];
+        $withUser = $input['with_user'] ?? '';
+        $sinceId = intval($input['last_id'] ?? 0);
+        
+        if (empty($withUser)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid request']);
+            exit;
+        }
+        
+        $stmt = $pdo->prepare("
+            SELECT 
+                id,
+                from_username,
+                to_username,
+                message,
+                is_read,
+                created_at
+            FROM direct_messages
+            WHERE (
+                (from_username = ? AND to_username = ?) OR
+                (from_username = ? AND to_username = ?)
+            )
+            AND id > ?
+            ORDER BY created_at ASC
+            LIMIT 100
+        ");
+        $stmt->execute([$username, $withUser, $withUser, $username, $sinceId]);
+        $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode(['success' => true, 'messages' => $messages]);
+    }
+    
+    elseif ($action === 'get_conversations') {
+        $username = get_user()['username'];
+        
+        // Get list of conversations with last message
+        $stmt = $pdo->prepare("
+            SELECT 
+                CASE 
+                    WHEN from_username = ? THEN to_username
+                    ELSE from_username
+                END as other_user,
+                MAX(created_at) as last_message_time,
+                MAX(id) as last_message_id,
+                (SELECT message FROM direct_messages dm2 
+                 WHERE (
+                    (dm2.from_username = ? AND dm2.to_username = dm.other_user) OR
+                    (dm2.from_username = dm.other_user AND dm2.to_username = ?)
+                 )
+                 ORDER BY created_at DESC LIMIT 1) as last_message,
+                SUM(CASE WHEN to_username = ? AND is_read = 0 THEN 1 ELSE 0 END) as unread_count
+            FROM (
+                SELECT from_username, to_username, created_at, id, message FROM direct_messages WHERE from_username = ? OR to_username = ?
+            ) as dm
+            GROUP BY other_user
+            ORDER BY last_message_time DESC
+            LIMIT 20
+        ");
+        $stmt->execute([$username, $username, $username, $username, $username, $username]);
+        $conversations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode(['success' => true, 'conversations' => $conversations]);
+    }
+    
+    elseif ($action === 'mark_as_read') {
+        $username = get_user()['username'];
+        $fromUser = $input['from_user'] ?? '';
+        
+        if (empty($fromUser)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid request']);
+            exit;
+        }
+        
+        $stmt = $pdo->prepare("UPDATE direct_messages SET is_read = 1 WHERE to_username = ? AND from_username = ? AND is_read = 0");
+        $stmt->execute([$username, $fromUser]);
+        
+        echo json_encode(['success' => true]);
+    }
+    
     else {
         echo json_encode(['success' => false, 'error' => 'Invalid action']);
     }

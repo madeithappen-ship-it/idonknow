@@ -133,6 +133,7 @@ if ($user['level'] < 20 && !is_admin()) {
     </div>
     
     <script src="assets/js/dice.js"></script>
+    <script src="assets/js/live-chat.js"></script>
     
     <!-- Cookie Consent Banner -->
     <script src="assets/js/cookies.js"></script>

@@ -1154,6 +1154,7 @@ $token = csrf_token();
     
     <script src="assets/js/friends.js"></script>
     <script src="assets/js/notifications.js"></script>
+    <script src="assets/js/live-chat.js"></script>
     
     <!-- Cookie Consent Banner -->
     <script src="assets/js/cookies.js"></script>

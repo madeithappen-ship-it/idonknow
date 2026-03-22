@@ -290,6 +290,9 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
         </div>
     </footer>
 
+    <!-- Live Chat System -->
+    <script src="assets/js/live-chat.js"></script>
+    
     <!-- Cookie Consent Banner -->
     <script src="assets/js/cookies.js"></script>
 </body>
