@@ -360,6 +360,18 @@ function finishMove(move) {
     else if (chess.in_stalemate()) reason = 'Stalemate';
     
     if (isVsComputer) {
+        // Send move to database for live spectators
+        if (currentRoomId && currentRoomId !== 'local') {
+            fetchAPI('move', {
+                room_code: currentRoomId,
+                fen: chess.fen(),
+                from: move.from,
+                to: move.to,
+                san: move.san,
+                game_over: chess.game_over(),
+                reason: reason
+            }).catch(e => console.error('Failed to sync player move:', e));
+        }
         checkLocalGameOver();
         if (!chess.game_over()) {
             makeAIMove();
@@ -425,6 +437,19 @@ async function makeAIMove() {
                 
                 updateEvaluationBar();
                 checkLocalGameOver();
+                
+                // Send move to database for live spectators (if vs computer and in a real room)
+                if (isVsComputer && currentRoomId && currentRoomId !== 'local') {
+                    fetchAPI('move', {
+                        room_code: currentRoomId,
+                        fen: chess.fen(),
+                        from: moveObj.from,
+                        to: moveObj.to,
+                        san: moveObj.san,
+                        game_over: chess.game_over(),
+                        reason: chess.in_checkmate() ? 'Checkmate' : (chess.in_stalemate() ? 'Stalemate' : '')
+                    }).catch(e => console.error('Failed to sync AI move:', e));
+                }
             } else {
                 console.error('❌ Invalid move returned by AI:', move);
             }
@@ -986,10 +1011,29 @@ document.getElementById('btn-copy-link').addEventListener('click', () => {
 });
 
 document.getElementById('btn-comp-match').addEventListener('click', () => {
-    isVsComputer = true;
-    currentRoomId = 'local';
-    myColor = 'w';
-    startGameUI(true, 'Computer (Medium)');
+    const btn = document.getElementById('btn-comp-match');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Starting...';
+    
+    // Create a room for AI game so it shows in live games
+    fetchAPI('create_room', { target_opponent: 'Stockfish' }).then(data => {
+        if (data.success) {
+            isVsComputer = true;
+            currentRoomId = data.room_code;
+            myColor = 'w';
+            
+            // Immediately join/start the game
+            fetchAPI('join_room', { room_code: currentRoomId }).then(joinData => {
+                if (joinData.success) {
+                    console.log('✅ AI game room created:', currentRoomId);
+                    startGameUI(true, 'Stockfish (Medium)');
+                    startSyncPolling();
+                }
+            });
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-robot"></i> <div class="btn-text"><span class="title">Play vs Computer</span><span class="subtitle">Practice against AI bots</span></div>';
+    });
 });
 
 document.getElementById('btn-join-link').addEventListener('click', () => {
