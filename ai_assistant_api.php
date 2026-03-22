@@ -16,31 +16,47 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $user_id = $_SESSION['user_id'];
 
 if ($action === 'chat') {
-    $message = trim($_POST['message'] ?? '');
-    if (!$message) {
-        echo json_encode(['success' => false, 'error' => 'Empty message']);
-        exit;
-    }
+    try {
+        $message = trim($_POST['message'] ?? '');
+        if (!$message) {
+            echo json_encode(['success' => false, 'error' => 'Empty message']);
+            exit;
+        }
 
-    // Load knowledge base
-    $knowledge_path = __DIR__ . '/ai_knowledge.json';
-    $knowledge = json_decode(file_get_contents($knowledge_path), true);
-    
-    $response = get_ai_response($message, $knowledge);
-    
-    // Log the interaction in the database (optional, for history)
-    // We can use the existing chat_messages table with a special 'ai' sender_type
-    $stmt = $pdo->prepare("INSERT INTO chat_messages (sender_type, user_id, message) VALUES (?, ?, ?)");
-    $stmt->execute(['user', $user_id, $message]); // User's message
-    
-    $stmt = $pdo->prepare("INSERT INTO chat_messages (sender_type, user_id, message) VALUES (?, ?, ?)");
-    $stmt->execute(['ai', $user_id, $response]); // AI's response
-    
-    echo json_encode([
-        'success' => true,
-        'response' => $response,
-        'sender_type' => 'ai'
-    ]);
+        // Load knowledge base
+        $knowledge_path = __DIR__ . '/ai_knowledge.json';
+        if (!file_exists($knowledge_path)) {
+            throw new Exception("Knowledge base missing");
+        }
+        
+        $knowledge_raw = file_get_contents($knowledge_path);
+        $knowledge = json_decode($knowledge_raw, true);
+        if (!$knowledge) {
+            throw new Exception("Invalid knowledge base format");
+        }
+        
+        $response = get_ai_response($message, $knowledge);
+        
+        // Log the interaction in the database
+        // We use 'admin' sender_type or 'ai' - chat_widget.php handles anything not 'user' as 'theirs'
+        $stmt = $pdo->prepare("INSERT INTO chat_messages (sender_type, user_id, message, is_read) VALUES (?, ?, ?, 1)");
+        $stmt->execute(['user', $user_id, $message]); 
+        
+        $stmt = $pdo->prepare("INSERT INTO chat_messages (sender_type, user_id, message, is_read) VALUES (?, ?, ?, 1)");
+        $stmt->execute(['ai', $user_id, $response]); 
+        
+        echo json_encode([
+            'success' => true,
+            'response' => $response,
+            'sender_type' => 'ai'
+        ]);
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'response' => "I'm having a bit of a literal brain-freeze. Please try again or ask something about XP!"
+        ]);
+    }
     exit;
 }
 

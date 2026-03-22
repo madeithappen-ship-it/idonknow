@@ -518,8 +518,13 @@ function sendChat() {
                 if (d.success) {
                     appendAIMessage(d.response, 'ai');
                 } else {
-                    appendAIMessage("Sorry, I'm having trouble connecting to my brain right now.", 'ai');
+                    appendAIMessage(d.response || "Sorry, I'm having trouble connecting to my brain right now.", 'ai');
                 }
+            })
+            .catch(err => {
+                console.error("AI Error:", err);
+                ind.style.display = 'none';
+                appendAIMessage("Connection lost. Please check your internet or try again later.", 'ai');
             });
         return;
     }
