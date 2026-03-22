@@ -273,10 +273,11 @@ $ratings = $ratings_result ? $ratings_result->fetch() : ['bullet_rating' => 1200
 <!-- Scripts -->
 <script src="https://www.unpkg.com/chess.js@1.0.0-beta.6"></script>
 <script src="https://cdn.jsdelivr.net/npm/stockfish@14.0.0/src/stockfish.js"></script>
+<script src="public/chess-sound.js"></script>
 <script src="public/script.js"></script>
 <script src="public/professional-chess-ui.js"></script>
 <script src="public/daily-puzzle.js"></script>
-<script src="public/chess-sound.js"></script>
+
 
 <script>
     // Initialize professional chess features

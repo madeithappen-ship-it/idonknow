@@ -362,6 +362,12 @@ function finishMove(move) {
     document.querySelector(`[data-square="${move.to}"]`)?.classList.add('last-move');
     appendMoveHistory(move);
     
+    // Play sound
+    if (chessSound) {
+        chessSound.playMove(!!move.captured, chess.in_check());
+    }
+
+    
     // Analyze the move if AI is enabled
     if (isVsComputer && chessAI && coachEnabled) {
         analyzeMoveQuality(move);
@@ -446,6 +452,12 @@ async function makeAIMove() {
                 document.querySelector(`[data-square="${moveObj.from}"]`)?.classList.add('last-move');
                 document.querySelector(`[data-square="${moveObj.to}"]`)?.classList.add('last-move');
                 appendMoveHistory(moveObj);
+                
+                // Play sound
+                if (chessSound) {
+                    chessSound.playMove(!!moveObj.captured, chess.in_check());
+                }
+
                 
                 // Update previous evaluation for next move analysis
                 if (analysis && analysis.score !== null) {
@@ -749,7 +761,13 @@ function checkLocalGameOver() {
         setTimeout(() => {
             document.getElementById('game-over-modal').classList.remove('hidden');
             document.getElementById('game-over-desc').innerText = reason;
+            
+            // Play game over sound
+            if (chessSound) {
+                chessSound.playGameOver();
+            }
         }, 500);
+
     }
 }
 
@@ -1161,7 +1179,7 @@ function clearHighlights() {
 // ============================================================================
 
 let selectedGameTime = 1800; // Default 30 minutes
-let gameStartTime = null;
+gameStartTime = null;
 let gameTimerInterval = null;
 
 function showColorSelection(isMultiplayer = false) {
