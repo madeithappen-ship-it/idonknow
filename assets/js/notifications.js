@@ -5,7 +5,7 @@
 
 class NotificationManager {
     constructor() {
-        this.pollInterval = 30000; // Poll every 30 seconds
+        this.pollInterval = 60000; // Poll every 60 seconds (reduced from 30s for performance)
         this.lastPollId = 0;
         this.isPolling = false;
         this.sounds = {};

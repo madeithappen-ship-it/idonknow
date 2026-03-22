@@ -41,6 +41,23 @@ ini_set('display_errors', getenv('DEVELOPMENT_MODE') === 'true' ? '1' : '0');
 ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/logs/error.log');
 
+// ========================================
+// Performance & Caching Headers
+// ========================================
+if (!headers_sent()) {
+    // Enable gzip compression
+    if (!extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
+        ob_start('ob_gzhandler');
+    }
+    
+    // Cache static content in browser for production
+    if (getenv('DEVELOPMENT_MODE') !== 'true') {
+        header('Cache-Control: public, max-age=3600');
+    } else {
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+    }
+}
+
 // Create logs directory if it doesn't exist
 if (!is_dir(__DIR__ . '/logs')) {
     mkdir(__DIR__ . '/logs', 0755, true);

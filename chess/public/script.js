@@ -7,6 +7,9 @@ let lastMoveId = 0;
 let draggedPiece = null;
 let selectedSquare = null;
 let gameStatus = 'waiting';
+let gameStartTime = null;
+let timerInterval = null;
+let gameTimeLimit = 1800; // 30 minutes in seconds
 
 function fetchAPI(action, payload = {}) {
     return fetch(`api.php?action=${action}`, {
@@ -269,7 +272,7 @@ function startSyncPolling() {
                 checkLocalGameOver();
             }
         });
-    }, 1000);
+    }, 2500);
 }
 
 // Event Listeners
@@ -296,8 +299,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Setup Challenge Polling
-    setInterval(pollChallenges, 3000);
+    // Setup Challenge Polling (reduced frequency for performance)
+    setInterval(pollChallenges, 5000);
     
     // Auto Join
     const urlParams = new URLSearchParams(window.location.search);
@@ -461,7 +464,8 @@ function challengePlayer(opponentUsername, btnEl) {
 
 let activeChallengeRoom = null;
 function pollChallenges() {
-    if (gameStatus === 'playing') return; // Don't interrupt active games
+    // Skip if game is active or already showing a challenge toast
+    if (gameStatus === 'playing' || !document.getElementById('challenge-toast').classList.contains('hidden')) return;
     
     fetchAPI('check_challenges').then(data => {
         if (data.success && data.challenges && data.challenges.length > 0) {

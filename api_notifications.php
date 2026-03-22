@@ -2,6 +2,7 @@
 /**
  * Real-time Notifications API
  * Returns: Admin notifications, Daily quest updates, and Chess challenge requests
+ * Optimized for performance with efficient queries
  */
 require_once(__DIR__ . '/config.php');
 
@@ -10,20 +11,25 @@ if (!is_logged_in()) {
     exit;
 }
 
+// Set cache headers for notification polling
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+
 $user_id = $_SESSION['user_id'];
 $since_id = (int)($_GET['since_id'] ?? 0);
 $notifications = [];
 
-// 1. FETCH NEW ADMIN NOTIFICATIONS
+// 1. FETCH NEW ADMIN NOTIFICATIONS (optimized query)
 $stmt = $pdo->prepare("
     SELECT 
-        'admin' as type,
         id,
         message,
         image_path,
         created_at
     FROM admin_notifications 
-    WHERE id > ? AND (target_user_id IS NULL OR target_user_id = ?)
+    WHERE id > ? 
+    AND (target_user_id IS NULL OR target_user_id = ?)
+    AND created_at > DATE_SUB(NOW(), INTERVAL 1 DAY)
     ORDER BY id DESC
     LIMIT 5
 ");

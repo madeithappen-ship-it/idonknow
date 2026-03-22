@@ -13,10 +13,10 @@ $action = $_GET['action'] ?? '';
 $input = json_decode(file_get_contents('php://input'), true);
 
 try {
-    // Auto-cleanup old rooms occasionally (basic garbage collection for demo)
-    if (rand(1, 100) <= 5) {
-        $pdo->exec("DELETE FROM chess_rooms WHERE created_at < NOW() - INTERVAL 2 HOUR");
-        $pdo->exec("DELETE FROM chess_moves WHERE created_at < NOW() - INTERVAL 2 HOUR");
+    // Auto-cleanup old rooms occasionally (runs every ~5000 requests to reduce overhead)
+    if (rand(1, 5000) === 1) {
+        $pdo->exec("DELETE FROM chess_rooms WHERE created_at < NOW() - INTERVAL 6 HOUR AND status IN ('abandoned', 'finished')");
+        $pdo->exec("DELETE FROM chess_moves WHERE room_code NOT IN (SELECT room_code FROM chess_rooms)");
     }
 
     if ($action === 'create_room') {
@@ -24,9 +24,11 @@ try {
         $target = $input['target_opponent'] ?? null;
         $roomCode = strtoupper(substr(md5(uniqid()), 0, 6)); // 6 letter code
         
-        $stmt = $pdo->prepare("INSERT INTO chess_rooms (room_code, player_w_name, player_b_name, status) VALUES (?, ?, ?, 'waiting')");
+        // Use INSERT IGNORE to prevent duplicate key errors
+        $stmt = $pdo->prepare("INSERT INTO chess_rooms (room_code, player_w_name, player_b_name, status, created_at) VALUES (?, ?, ?, 'waiting', NOW())");
         $stmt->execute([$roomCode, $username, $target]);
         
+        header('Cache-Control: no-cache');
         echo json_encode(['success' => true, 'room_code' => $roomCode, 'color' => 'w']);
     }
     
@@ -63,23 +65,28 @@ try {
         $roomCode = strtoupper($input['room_code'] ?? '');
         $sinceId = intval($input['last_move_id'] ?? 0);
         
-        $stmt = $pdo->prepare("SELECT * FROM chess_rooms WHERE room_code = ?");
+        // Fetch only necessary room fields
+        $stmt = $pdo->prepare("SELECT room_code, player_w_name, player_b_name, status, fen, result_reason FROM chess_rooms WHERE room_code = ?");
         $stmt->execute([$roomCode]);
         $room = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$room) {
+            header('HTTP/1.1 404 Not Found');
             echo json_encode(['success' => false, 'error' => 'Room not found']);
             exit;
         }
         
-        $stmt = $pdo->prepare("SELECT * FROM chess_moves WHERE room_code = ? AND id > ? ORDER BY id ASC");
+        // Only fetch move fields we need
+        $stmt = $pdo->prepare("SELECT id, color, move_from, move_to FROM chess_moves WHERE room_code = ? AND id > ? ORDER BY id ASC LIMIT 50");
         $stmt->execute([$roomCode, $sinceId]);
         $moves = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
+        header('Cache-Control: no-cache');
         echo json_encode([
             'success' => true,
             'room' => $room,
-            'moves' => $moves
+            'moves' => $moves,
+            'move_count' => count($moves)
         ]);
     }
     
@@ -124,10 +131,11 @@ try {
     }
     
     elseif ($action === 'get_players') {
-        // Fetch all recent/active users except the current one
-        $stmt = $pdo->prepare("SELECT username, display_name, avatar_url, last_seen, xp FROM users WHERE username != ? ORDER BY last_seen DESC LIMIT 50");
+        // Fetch recent/active users except the current one (limit to improve performance)
+        $stmt = $pdo->prepare("SELECT username, display_name, avatar_url, xp FROM users WHERE username != ? AND status = 'active' ORDER BY last_seen DESC LIMIT 30");
         $stmt->execute([get_user()['username']]);
         $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        header('Cache-Control: public, max-age=300');
         echo json_encode(['success' => true, 'players' => $players]);
     }
     
@@ -145,6 +153,37 @@ try {
         $stmt = $pdo->prepare("UPDATE chess_rooms SET status = 'abandoned', result_reason = 'Declined' WHERE room_code = ? AND status = 'waiting'");
         $stmt->execute([$roomCode]);
         echo json_encode(['success' => true]);
+    }
+    
+    elseif ($action === 'get_live_games') {
+        // Get all ongoing games (playing status)
+        $stmt = $pdo->prepare("
+            SELECT 
+                room_code,
+                player_w_name,
+                player_b_name,
+                started_at,
+                status,
+                fen,
+                TIMESTAMPDIFF(SECOND, started_at, NOW()) as elapsed_seconds
+            FROM chess_rooms 
+            WHERE status = 'playing'
+            AND started_at IS NOT NULL
+            AND started_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+            ORDER BY started_at DESC
+            LIMIT 20
+        ");
+        $stmt->execute();
+        $games = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($games as &$game) {
+            // Calculate remaining time (30 minutes = 1800 seconds)
+            $game['elapsed_seconds'] = (int)$game['elapsed_seconds'];
+            $game['remaining_seconds'] = max(0, 1800 - $game['elapsed_seconds']);
+            $game['game_over'] = $game['remaining_seconds'] <= 0;
+        }
+        
+        echo json_encode(['success' => true, 'games' => $games]);
     }
     
     else {

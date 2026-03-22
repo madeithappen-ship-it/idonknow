@@ -32,6 +32,22 @@ $username = get_user()['username'];
         </div>
     </div>
     
+    <!-- Game Timer Display -->
+    <div id="game-timer" style="
+        display: none;
+        text-align: center;
+        padding: 10px;
+        margin: 10px 0;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border: 2px solid #4CAF50;
+        border-radius: 8px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #4CAF50;
+    ">
+        ⏱️ Time: <span id="timer-display">30:00</span>
+    </div>
+    
     <div id="chessboard" class="chessboard">
         <!-- Board squares will be injected by script.js -->
     </div>
@@ -50,6 +66,7 @@ $username = get_user()['username'];
     <div class="sidebar-tabs">
         <div class="tab active" data-target="panel-new-game">New Game</div>
         <div class="tab" data-target="panel-games">Games</div>
+        <div class="tab" data-target="panel-live">🔴 Live</div>
         <div class="tab" data-target="panel-players">Players</div>
     </div>
     
@@ -122,8 +139,19 @@ $username = get_user()['username'];
 
     <!-- Games Panel (Placeholder) -->
     <div class="sidebar-content hidden" id="panel-games">
-        <h2 class="section-title">Live Games</h2>
-        <p style="color: #888; font-size: 13px;">No active games to spectate.</p>
+        <h2 class="section-title">My Games</h2>
+        <div id="games-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <p style="color: #888; font-size: 13px;">No saved games yet.</p>
+        </div>
+    </div>
+
+    <!-- Live Games Panel -->
+    <div class="sidebar-content hidden" id="panel-live">
+        <h2 class="section-title">🔴 Live Games</h2>
+        <p style="color: #aaa; font-size: 12px; margin-bottom: 15px;">Watch ongoing games in real-time</p>
+        <div id="live-games-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <p style="color: #888; font-size: 13px;">Loading live games...</p>
+        </div>
     </div>
 
 </div>
