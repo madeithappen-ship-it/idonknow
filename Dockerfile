@@ -14,6 +14,11 @@ RUN apt-get update && apt-get install -y \
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
+# Configure PHP for 50MB video uploads
+RUN echo "upload_max_filesize = 50M" > /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "post_max_size = 50M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "memory_limit = 128M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 # Update Apache DocumentRoot if necessary (default is /var/www/html)
 # ENV APACHE_DOCUMENT_ROOT /var/www/html
 # RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf

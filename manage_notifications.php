@@ -9,7 +9,7 @@ if (!is_admin()) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // If POST is completely empty but CONTENT_LENGTH is high, PHP dropped it due to post_max_size
     if (empty($_POST) && isset($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > 0) {
-        die('Upload failed. The file you attempted to upload exceeds the server post_max_size (8MB). Please upload a smaller compressed video or restart your PHP server with higher limits: php -d upload_max_filesize=100M -d post_max_size=100M -S localhost:8000');
+        die('Upload failed. The file you attempted to upload exceeds the server post_max_size (50MB). Please upload a smaller compressed video.');
     }
 
     if (!verify_csrf($_POST['csrf_token'] ?? '')) {
@@ -41,6 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $image_path = null;
             if ($hasImage) {
                 if ($_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                    $max_size = 50 * 1024 * 1024; // 50MB
+                    if ($_FILES['image']['size'] > $max_size) {
+                        $_SESSION['message'] = "File too large (max 50MB). Please upload a smaller video or image.";
+                        $_SESSION['message_type'] = "error";
+                        header('Location: ' . $return_url);
+                        exit;
+                    }
                     $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
                     $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm'];
                     if (in_array(strtolower($ext), $allowed)) {
