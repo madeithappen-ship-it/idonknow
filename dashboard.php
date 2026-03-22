@@ -587,6 +587,32 @@ $token = csrf_token();
             </div>
         </div>
         
+        <!-- APK Download Section -->
+        <div style="margin-bottom: 25px; padding: 20px; background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 87, 34, 0.15)); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 10px; box-shadow: 0 4px 15px rgba(255, 87, 34, 0.1);">
+            <h2 style="color: #FFB74D; margin-bottom: 15px; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">📥</span> Download the App
+            </h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                <!-- Instant Download Button -->
+                <div style="padding: 15px; background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 8px; display: flex; flex-direction: column; gap: 10px;">
+                    <h3 style="color: #FFB74D; font-size: 16px;">Quick Install</h3>
+                    <p style="color: #bbb; font-size: 13px;">Get the app instantly via your browser</p>
+                    <button onclick="downloadAPK()" style="padding: 12px 20px; background: linear-gradient(135deg, #FF9800, #FF5722); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span style="font-size: 18px;">⬇️</span> Download Now
+                    </button>
+                </div>
+                
+                <!-- PWA Install -->
+                <div style="padding: 15px; background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 8px; display: flex; flex-direction: column; gap: 10px;">
+                    <h3 style="color: #FFB74D; font-size: 16px;">Native Installation</h3>
+                    <p style="color: #bbb; font-size: 13px;">Install as a full native Android app</p>
+                    <button onclick="if(window.pwaInstaller) window.pwaInstaller.promptInstall()" style="padding: 12px 20px; background: linear-gradient(135deg, #FF9800, #FF5722); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span style="font-size: 18px;">📱</span> Install App
+                    </button>
+                </div>
+            </div>
+        </div>
+        
         <!-- Feel The Vibe -->
         <?php if (!empty($site_music)): ?>
         <div class="section" style="margin-bottom: 25px; padding: 20px; background: rgba(0,0,0,0.4); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
@@ -1183,6 +1209,18 @@ $token = csrf_token();
                 })
                 .catch(e => console.error(e));
         }, 5000);
+        
+        // APK Download Function
+        function downloadAPK() {
+            // Create a download link and trigger it
+            const link = document.createElement('a');
+            link.href = './download_apk.php';
+            link.download = 'BoringLife.apk';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     </script>
     
     <script src="assets/js/friends.js"></script>

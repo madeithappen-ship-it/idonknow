@@ -787,10 +787,34 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
                 <p>Install Side Quest directly as an Android app file</p>
 
                 <div class="apk-options">
-                    <!-- Option 1: PWA Builder -->
+                    <!-- Option 1: Direct Download -->
+                    <div class="apk-option">
+                        <div class="apk-option-icon">⚡</div>
+                        <h3>Quick Download (Recommended)</h3>
+                        <p>Get the APK file instantly, no waiting</p>
+                        
+                        <div class="apk-steps">
+                            <ol>
+                                <li>Click "Download APK" below</li>
+                                <li>File downloads to your phone</li>
+                                <li>Open file and tap "Install"</li>
+                                <li>Done! App on home screen</li>
+                            </ol>
+                        </div>
+
+                        <button class="btn-apk btn-apk-primary" onclick="downloadAPK()">
+                            ⬇️ Download APK Now
+                        </button>
+
+                        <div class="apk-note">
+                            <strong>Fastest method:</strong> Works instantly on any Android phone
+                        </div>
+                    </div>
+
+                    <!-- Option 2: PWA Builder -->
                     <div class="apk-option">
                         <div class="apk-option-icon">🚀</div>
-                        <h3>Generate APK (Free)</h3>
+                        <h3>Generate APK (Alternative)</h3>
                         <p>Create a native Android installation file</p>
                         
                         <div class="apk-steps">
@@ -802,36 +826,12 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
                             </ol>
                         </div>
 
-                        <a href="https://www.pwabuilder.com/generate" target="_blank" class="btn-apk btn-apk-primary">
+                        <a href="https://www.pwabuilder.com/generate" target="_blank" class="btn-apk btn-apk-secondary">
                             🌐 Open PWA Builder
                         </a>
 
                         <div class="apk-note">
                             <strong>Note:</strong> Paste our URL: <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">https://sidequest.app</code>
-                        </div>
-                    </div>
-
-                    <!-- Option 2: Direct Install -->
-                    <div class="apk-option">
-                        <div class="apk-option-icon">⚡</div>
-                        <h3>Quick Install</h3>
-                        <p>Use the browser's native install feature</p>
-                        
-                        <div class="apk-steps">
-                            <ol>
-                                <li>Open on Android phone</li>
-                                <li>Tap menu <strong>(⋮)</strong></li>
-                                <li>Select "Install app"</li>
-                                <li>Done! App on home screen</li>
-                            </ol>
-                        </div>
-
-                        <button class="btn-apk btn-apk-secondary" onclick="if(window.pwaInstaller) window.pwaInstaller.promptInstall(); else alert('Click the Install button in navbar')">
-                            ⬇️ Install App Now
-                        </button>
-
-                        <div class="apk-note">
-                            <strong>Fastest:</strong> Works instantly on any Android phone
                         </div>
                     </div>
                 </div>
@@ -888,5 +888,19 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
 
     <!-- Progressive Web App Helper -->
     <script src="assets/js/pwa-helper.js"></script>
+    
+    <script>
+        // APK Download Function
+        function downloadAPK() {
+            // Create a download link and trigger it
+            const link = document.createElement('a');
+            link.href = './download_apk.php';
+            link.download = 'BoringLife.apk';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
 </body>
 </html>
