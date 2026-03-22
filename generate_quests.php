@@ -23,7 +23,7 @@ $quest_templates = [
             'Ask a stranger what superpower they would choose and why',
             'Tell someone a surprising fact you learned today',
             'Ask a friend what they think you\'d be terrible at',
-            'Tell a stranger one thing that makes you happy',
+            'Tell a stranger one thing that makes you happy but it is racist',
             'Ask someone what adventure they\'d take if money wasn\'t an issue',
         ]
     ],
@@ -35,7 +35,7 @@ $quest_templates = [
             'Compliment 3 random people on something other than appearance',
             'Do a silly dance in a public place for 30 seconds',
             'Sing the first line of your favorite song to a stranger',
-            'Ask someone for directions you already know',
+            'Ask someone for a kiss that you don't know',
             'Smile and wave at passing cars for 1 minute',
         ]
     ],
@@ -46,8 +46,8 @@ $quest_templates = [
         'templates' => [
             'Text a number from a long time ago asking "How was your day?"',
             'Post a selfie with a funny face on social media',
-            'Text your crush a meme (without explanation)',
-            'Comment something funny on a public post',
+            'Text your crush a crazy simping note (without explanation)',
+            'Comment something funny/racist on a public post',
             'Send a nasty voice message instead of text to 3 people',
         ]
     ],
@@ -58,7 +58,7 @@ $quest_templates = [
         'templates' => [
             'Make a joke about something nobody laughs at',
             'Send an intentionally bad pun to someone',
-            'Tell a dad joke to someone under 25',
+            'Tell a dark joke to someone under 25',
             'Make a sarcastic comment about yourself',
             'Send a meme only you would find funny',
         ]
@@ -72,7 +72,7 @@ $quest_templates = [
             'Run a mile without stopping',
             'Hold an ice cube in your hand for 60 seconds',
             'Do a handstand for 30 seconds (or against a wall)',
-            'Jump rope for 5 minutes straight',
+            'Jump hoes for 5 minutes straight',
         ]
     ],
     // Physical Quests
@@ -96,7 +96,7 @@ $quest_templates = [
             'Get a temporary tattoo of something ridiculous',
             'Wear your shirt inside out for an entire day',
             'Call a radio station and request a song',
-            'Go to a store and try to negotiate the price of something',
+            'Go to a store and try to negotiate the price of something lest than ksh20',
         ]
     ],
 ];
