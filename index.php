@@ -233,6 +233,243 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
             margin-bottom: 10px;
         }
         
+        /* Download App Section */
+        .download-app-section {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(33, 150, 243, 0.15) 100%);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            border-radius: 16px;
+            padding: 60px 20px;
+            margin: 60px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .download-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .download-content h2 {
+            font-size: 36px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #4CAF50, #2196F3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .download-content > p {
+            font-size: 16px;
+            color: #ccc;
+            margin-bottom: 30px;
+        }
+
+        .download-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 40px;
+            box-shadow: 0 8px 24px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-download:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(76, 175, 80, 0.4);
+        }
+
+        .download-icon-btn {
+            font-size: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .platform-guide {
+            margin-bottom: 40px;
+        }
+
+        .platform-guide h3 {
+            font-size: 18px;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        .platform-steps {
+            display: grid;
+            gap: 15px;
+        }
+
+        .step {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            font-size: 13px;
+            color: #aaa;
+            margin: 0;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .benefit {
+            text-align: center;
+        }
+
+        .benefit-icon {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .benefit strong {
+            display: block;
+            color: #4CAF50;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .benefit p {
+            font-size: 12px;
+            color: #999;
+            margin: 0;
+        }
+
+        /* Phone Mockup */
+        .download-mockup {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .phone-frame {
+            width: 280px;
+            height: 560px;
+            background: #000;
+            border-radius: 40px;
+            padding: 14px;
+            border: 8px solid #000;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 50px rgba(76, 175, 80, 0.2);
+            position: relative;
+        }
+
+        .phone-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 28px;
+            background: #000;
+            border-radius: 0 0 30px 30px;
+            z-index: 10;
+        }
+
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 25px;
+            background: #000;
+            border-radius: 0 0 20px 20px;
+            z-index: 5;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            border-radius: 36px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .screen-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .download-container {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .download-mockup {
+                margin-top: 30px;
+            }
+
+            .benefits-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .download-content h2 {
+                font-size: 28px;
+            }
+
+            .btn-download {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
         footer {
             text-align: center;
             padding: 30px 20px;
@@ -302,6 +539,89 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
                 <div class="emoji">🚀</div>
                 <h3>Never Boring Again</h3>
                 <p>Step outside your comfort zone. Do things you've always wanted to do in a fun, supported community.</p>
+            </div>
+        </section>
+
+        <!-- Download App Section -->
+        <section class="download-app-section">
+            <div class="download-container">
+                <div class="download-content">
+                    <div class="download-icon">📱</div>
+                    <h2>Get Side Quest as an App</h2>
+                    <p>Install Side Quest directly on your phone, tablet, or computer. Works offline too!</p>
+                    
+                    <button class="btn-download" id="downloadAppBtn" onclick="if(window.pwaInstaller) window.pwaInstaller.promptInstall(); else alert('App installation not available yet');">
+                        <span class="download-icon-btn">⬇️</span>Download Free App
+                    </button>
+                    
+                    <div class="platform-guide">
+                        <h3>How to Install</h3>
+                        
+                        <div class="platform-steps">
+                            <div class="step">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <h4>💙 Chrome/Edge (Desktop)</h4>
+                                    <p>Look for <strong>📥 Install</strong> button in address bar</p>
+                                </div>
+                            </div>
+                            
+                            <div class="step">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <h4>📱 Android (Chrome)</h4>
+                                    <p>Tap menu <strong>(⋮)</strong> → <strong>Install app</strong></p>
+                                </div>
+                            </div>
+                            
+                            <div class="step">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <h4>🍎 iPhone/iPad (Safari)</h4>
+                                    <p>Tap Share <strong>(↑)</strong> → <strong>Add to Home Screen</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="benefits-grid">
+                        <div class="benefit">
+                            <span class="benefit-icon">⚡</span>
+                            <strong>Lightning Fast</strong>
+                            <p>Cached content loads instantly</p>
+                        </div>
+                        <div class="benefit">
+                            <span class="benefit-icon">📡</span>
+                            <strong>Works Offline</strong>
+                            <p>Play even without internet</p>
+                        </div>
+                        <div class="benefit">
+                            <span class="benefit-icon">🔔</span>
+                            <strong>Notifications</strong>
+                            <p>Get push notifications</p>
+                        </div>
+                        <div class="benefit">
+                            <span class="benefit-icon">📲</span>
+                            <strong>Native Feel</strong>
+                            <p>Fullscreen app experience</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="download-mockup">
+                    <div class="phone-frame">
+                        <div class="notch"></div>
+                        <div class="screen">
+                            <div class="screen-content">
+                                <div style="text-align: center; padding: 20px;">
+                                    <div style="font-size: 40px; margin-bottom: 10px;">🎮</div>
+                                    <div style="font-weight: bold; color: #333;">Side Quest</div>
+                                    <div style="font-size: 12px; color: #999; margin-top: 5px;">App Installed</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
