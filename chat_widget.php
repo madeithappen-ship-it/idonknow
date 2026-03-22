@@ -460,16 +460,26 @@ function loadChatMessages() {
             if (m.id > _lastChatMsgId) {
                 _lastChatMsgId = m.id;
                 newMessagesCount++;
-                lastNewSender = _isAdminChat ? "User" : "Admin";
+                if (_isAdminChat) {
+                    lastNewSender = "User";
+                } else {
+                    lastNewSender = m.sender_type === 'ai' ? "Site Assistant" : "Admin";
+                }
                 lastNewMsg = m.message;
             }
             let isMine = (_isAdminChat && m.sender_type === 'admin') || (!_isAdminChat && m.sender_type === 'user');
             
+            let senderLabel = '';
+            if (!isMine) {
+                let senderName = m.sender_type === 'ai' ? 'Site Assistant' : 'Admin';
+                senderLabel = `<div style="font-size:10px; color:#888; margin-bottom:2px;">${senderName}</div>`;
+            }
+
             let delBtn = _isAdminChat ? `<span style="font-size:10px; cursor:pointer; color:#888; margin: 0 5px;" title="Delete message" onclick="deleteChatMsg(${m.id})">🗑️</span>` : '';
             
             let div = document.createElement('div');
             div.className = 'chat-msg ' + (isMine ? 'msg-mine' : 'msg-theirs');
-            div.innerHTML = isMine ? delBtn + linkifyText(m.message) : linkifyText(m.message) + delBtn;
+            div.innerHTML = senderLabel + (isMine ? delBtn + linkifyText(m.message) : linkifyText(m.message) + delBtn);
             body.appendChild(div);
         });
         
@@ -541,11 +551,6 @@ function sendChat() {
 let _lastUnreadCount = 0;
 
 function pollChat() {
-    if (_isAIMode && !_isAdminChat) {
-        // AI chat doesn't need aggressive polling of another API
-        setTimeout(pollChat, 4000);
-        return;
-    }
     if (_isChatOpen) {
         if (_isAdminChat && _activeChatUser === 0) {
             loadChatConversations();
