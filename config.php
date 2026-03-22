@@ -95,22 +95,30 @@ try {
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
+        PDO::ATTR_TIMEOUT => 10, // 10 second timeout
     ];
     
-    // Add SSL options if needed (for services like Aiven)
-    if (!empty($_ENV['DB_SSL']) || strpos($db_config['host'], 'aiven') !== false) {
-        $options[PDO::MYSQL_ATTR_SSL_CA] = __DIR__ . '/aiven-ca.pem';
-        $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+    // Verify password is set
+    if (empty($db_config['pass'])) {
+        throw new Exception("Database password (DB_PASS) is not configured. Please set DB_PASS environment variable.");
     }
     
+    // Try connecting without SSL first, as Aiven often allows it
     $pdo = new PDO($dsn, $db_config['user'], $db_config['pass'], $options);
     
     // Test connection
     $pdo->query("SELECT 1");
     
-} catch (PDOException $e) {
-    error_log("Database Connection Error: " . $e->getMessage());
-    die("Database connection failed. Please try again later.");
+} catch (Exception $e) {
+    $error_msg = "Database Connection Error: " . $e->getMessage();
+    error_log($error_msg);
+    
+    // Show error details in development, hide in production
+    if ($isDevelopment) {
+        die($error_msg);
+    } else {
+        die("Database connection failed. Please try again later.");
+    }
 }
 
 // ========================================
