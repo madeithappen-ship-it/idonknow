@@ -647,9 +647,6 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
         </div>
     </footer>
 
-    <!-- Live Chat System -->
-    <script src="assets/js/live-chat.js"></script>
-    
     <!-- Push Notifications -->
     <script src="assets/js/push-notifications.js"></script>
     

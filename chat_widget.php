@@ -203,10 +203,7 @@ $is_chat_admin = is_admin();
     
     <div id="chat-window">
         <div id="chat-header">
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <span id="chat-title">Site Assistant</span>
-                <button id="ai-mode-toggle" onclick="toggleAIChatMode()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; cursor: pointer; transition: all 0.2s;">Switch to Live</button>
-            </div>
+            <span id="chat-title">Site Assistant</span>
             <span style="cursor:pointer; font-size:18px; padding: 0 5px;" onclick="toggleChat()">×</span>
         </div>
         <div id="chat-body"></div>
@@ -223,27 +220,7 @@ const _isAdminChat = <?php echo $is_chat_admin ? 'true' : 'false'; ?>;
 let _activeChatUser = 0;
 let _lastChatMsgId = 0;
 let _isChatOpen = false;
-let _isAIMode = true; // Use AI by default for non-admins
-
-function toggleAIChatMode() {
-    _isAIMode = !_isAIMode;
-    const title = document.getElementById('chat-title');
-    const toggle = document.getElementById('ai-mode-toggle');
-    const input = document.getElementById('chat-input');
-    
-    if (_isAIMode) {
-        title.innerText = 'Site Assistant';
-        toggle.innerText = 'Switch to Live';
-        input.placeholder = 'Ask AI anything...';
-        document.getElementById('chat-body').innerHTML = '<div style="text-align:center; color:#666; margin-top:20px; font-size:12px;">AI Assistant is ready!</div>';
-        _lastChatMsgId = 0; // Reset for AI chat
-    } else {
-        title.innerText = 'Live Support';
-        toggle.innerText = 'Switch to AI';
-        input.placeholder = 'Type a message...';
-        loadChatMessages(); // Load human chat history
-    }
-}
+let _isAIMode = true; 
 
 function escapeHtml(unsafe) {
     return (unsafe||'').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
