@@ -145,5 +145,7 @@ if ($target_user['last_seen'] && strtotime($target_user['last_seen']) > time() -
         </div>
         <?php endif; ?>
     </div>
+    
+    <script src="assets/js/notifications.js"></script>
 </body>
 </html>

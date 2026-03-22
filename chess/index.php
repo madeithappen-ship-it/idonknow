@@ -153,6 +153,7 @@ $username = get_user()['username'];
 
 <script src="public/chess.min.js"></script>
 <script src="public/script.js"></script>
+<script src="../assets/js/notifications.js"></script>
 
 </body>
 </html>

@@ -1103,6 +1103,7 @@ $token = csrf_token();
     </script>
     
     <script src="assets/js/friends.js"></script>
+    <script src="assets/js/notifications.js"></script>
     
     <?php require_once(__DIR__ . '/chat_widget.php'); ?>
 </body>
