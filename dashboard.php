@@ -963,6 +963,19 @@ $token = csrf_token();
         </div>
     </div>
     
+    <!-- Music Player Modal -->
+    <div id="music-player-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.9); z-index: 10000; justify-content: center; align-items: center; padding: 20px;">
+        <div style="background: #1a1a2e; border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 10px; padding: 20px; max-width: 900px; width: 100%; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 id="music-title" style="color: #4CAF50; margin: 0; flex: 1;">Now Playing</h2>
+                <button onclick="closeMusic()" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: all 0.3s ease;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">✕ Close</button>
+            </div>
+            <div style="position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000;">
+                <iframe id="youtube-player" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 8px;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+    
     <script>
         function acceptDailyQuest(id) {
             const fd = new FormData();
@@ -1054,6 +1067,43 @@ $token = csrf_token();
                 .catch(err => alert('Error skipping quest'));
             }
         }
+
+        // YouTube Player Modal
+        function playRadio(videoId, title) {
+            const modal = document.getElementById('music-player-modal');
+            if (!modal) {
+                console.error('Music player modal not found');
+                return;
+            }
+            
+            const player = document.getElementById('youtube-player');
+            // Construct YouTube iframe embed URL
+            player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1`;
+            
+            document.getElementById('music-title').textContent = title;
+            modal.style.display = 'flex';
+        }
+
+        function closeMusic() {
+            const modal = document.getElementById('music-player-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                const player = document.getElementById('youtube-player');
+                player.src = ''; // Stop player
+            }
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('music-player-modal');
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeMusic();
+                    }
+                });
+            }
+        });
         
         // Handle physical drag and drop targeting
         function setupDragDrop(type) {
