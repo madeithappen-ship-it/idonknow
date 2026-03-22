@@ -1305,6 +1305,9 @@ $token = csrf_token();
         });
     </script>
     
+    <!-- Cookie Consent Banner -->
+    <script src="assets/js/cookies.js"></script>
+    
     <?php require_once(__DIR__ . '/chat_widget.php'); ?>
 </body>
 </html>

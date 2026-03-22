@@ -242,6 +242,9 @@ if ($user['level'] < 5 && !is_admin()) {
     </div>
 
     <script src="assets/js/solitaire.js"></script>
+    
+    <!-- Cookie Consent Banner -->
+    <script src="assets/js/cookies.js"></script>
 
 </body>
 </html>

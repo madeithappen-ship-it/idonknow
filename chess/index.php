@@ -183,5 +183,8 @@ $username = get_user()['username'];
 <script src="public/script.js"></script>
 <script src="../assets/js/notifications.js"></script>
 
+<!-- Cookie Consent Banner -->
+<script src="../assets/js/cookies.js"></script>
+
 </body>
 </html>

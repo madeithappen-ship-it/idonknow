@@ -212,6 +212,9 @@ if ($user['level'] < 10 && !is_admin()) {
     </div>
 
     <script src="assets/js/hunt.js"></script>
+    
+    <!-- Cookie Consent Banner -->
+    <script src="assets/js/cookies.js"></script>
 
 </body>
 </html>

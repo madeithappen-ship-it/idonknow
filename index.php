@@ -278,7 +278,19 @@ if ($is_logged_in && isset($_SESSION['user_id'])) {
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2026 Side Quest. Break the boredom. Start your adventure now.</p>
+        <div style="margin-bottom: 15px;">
+            <p>&copy; 2026 Side Quest. Break the boredom. Start your adventure now.</p>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 10px; color: #aaa; font-size: 14px;">
+            <a href="privacy.php" style="color: #4CAF50; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.color='#45a049'" onmouseout="this.style.color='#4CAF50'">Privacy Policy</a>
+            <span>•</span>
+            <a href="mailto:boringlifesuck3@gmail.com" style="color: #4CAF50; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.color='#45a049'" onmouseout="this.style.color='#4CAF50'">📧 boringlifesuck3@gmail.com</a>
+            <span>•</span>
+            <a href="tel:+254702060628" style="color: #4CAF50; text-decoration: none; transition: all 0.3s ease;" onmouseover="this.style.color='#45a049'" onmouseout="this.style.color='#4CAF50'">📞 +254 702 060 628</a>
+        </div>
     </footer>
+
+    <!-- Cookie Consent Banner -->
+    <script src="assets/js/cookies.js"></script>
 </body>
 </html>

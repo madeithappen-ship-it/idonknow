@@ -188,5 +188,8 @@ $token = csrf_token();
             Don't have an account? <a href="register.php">Create one here</a>
         </div>
     </div>
+    
+    <!-- Cookie Consent Banner -->
+    <script src="assets/js/cookies.js"></script>
 </body>
 </html>

@@ -160,5 +160,8 @@ $token = csrf_token();
             <button type="submit">Login</button>
         </form>
     </div>
+    
+    <!-- Cookie Consent Banner -->
+    <script src="assets/js/cookies.js"></script>
 </body>
 </html>

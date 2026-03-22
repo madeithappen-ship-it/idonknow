@@ -227,5 +227,8 @@ $token = csrf_token();
             Already have an account? <a href="login.php">Log in here</a>
         </div>
     </div>
+    
+    <!-- Cookie Consent Banner -->
+    <script src="assets/js/cookies.js"></script>
 </body>
 </html>

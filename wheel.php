@@ -114,5 +114,8 @@ $has_spun_today = ($user['last_spin_date'] === date('Y-m-d'));
     <div id="result-text"></div>
     
     <script src="assets/js/wheel.js"></script>
+    
+    <!-- Cookie Consent Banner -->
+    <script src="assets/js/cookies.js"></script>
 </body>
 </html>

@@ -316,5 +316,8 @@ if ($has_file) {
             }
         }
     </script>
+    
+    <!-- Cookie Consent Banner -->
+    <script src="assets/js/cookies.js"></script>
 </body>
 </html>
