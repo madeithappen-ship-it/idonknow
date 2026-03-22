@@ -108,6 +108,57 @@ if ($section === 'users' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header("Location: admin.php?section=users&token=" . urlencode($url_secret));
         exit;
+    } else if ($user_action === 'suspend' && verify_csrf($_POST['csrf_token'] ?? '')) {
+        $user_id = (int)($_POST['user_id'] ?? 0);
+        if ($user_id > 0) {
+            $stmt = $pdo->prepare("UPDATE users SET status = 'suspended' WHERE id = ?");
+            $stmt->execute([$user_id]);
+            log_audit('SUSPEND_USER', 'user', $user_id, ['new_status' => 'suspended']);
+            $_SESSION['message'] = "User has been suspended.";
+            $_SESSION['message_type'] = "success";
+        }
+        header("Location: admin.php?section=users&token=" . urlencode($url_secret));
+        exit;
+    } else if ($user_action === 'ban' && verify_csrf($_POST['csrf_token'] ?? '')) {
+        $user_id = (int)($_POST['user_id'] ?? 0);
+        if ($user_id > 0) {
+            $stmt = $pdo->prepare("UPDATE users SET status = 'inactive' WHERE id = ?");
+            $stmt->execute([$user_id]);
+            log_audit('BAN_USER', 'user', $user_id, ['new_status' => 'inactive']);
+            $_SESSION['message'] = "User has been banned.";
+            $_SESSION['message_type'] = "success";
+        }
+        header("Location: admin.php?section=users&token=" . urlencode($url_secret));
+        exit;
+    } else if ($user_action === 'activate' && verify_csrf($_POST['csrf_token'] ?? '')) {
+        $user_id = (int)($_POST['user_id'] ?? 0);
+        if ($user_id > 0) {
+            $stmt = $pdo->prepare("UPDATE users SET status = 'active' WHERE id = ?");
+            $stmt->execute([$user_id]);
+            log_audit('ACTIVATE_USER', 'user', $user_id, ['new_status' => 'active']);
+            $_SESSION['message'] = "User has been reactivated.";
+            $_SESSION['message_type'] = "success";
+        }
+        header("Location: admin.php?section=users&token=" . urlencode($url_secret));
+        exit;
+    } else if ($user_action === 'delete' && verify_csrf($_POST['csrf_token'] ?? '')) {
+        $user_id = (int)($_POST['user_id'] ?? 0);
+        if ($user_id > 0) {
+            // Delete related data first (cascading)
+            $pdo->prepare("DELETE FROM user_quests WHERE user_id = ?")->execute([$user_id]);
+            $pdo->prepare("DELETE FROM submissions WHERE user_id = ?")->execute([$user_id]);
+            $pdo->prepare("DELETE FROM friends WHERE user_id = ? OR friend_id = ?")->execute([$user_id, $user_id]);
+            $pdo->prepare("DELETE FROM admin_notifications WHERE target_user_id = ?")->execute([$user_id]);
+            
+            // Delete user
+            $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+            $stmt->execute([$user_id]);
+            log_audit('DELETE_USER', 'user', $user_id, []);
+            $_SESSION['message'] = "User has been permanently deleted.";
+            $_SESSION['message_type'] = "success";
+        }
+        header("Location: admin.php?section=users&token=" . urlencode($url_secret));
+        exit;
     }
 }
 
@@ -791,7 +842,12 @@ $token = csrf_token();
                             </td>
                             <td><?php echo date('M d, Y', strtotime($u['created_at'])); ?></td>
                             <td>
-                                <button class="btn btn-primary btn-sm" onclick="startAdminChat(<?php echo $u['id']; ?>, '<?php echo escape(addslashes($u['username'])); ?>')">Chat</button>
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                    <button class="btn btn-primary btn-sm" onclick="startAdminChat(<?php echo $u['id']; ?>, '<?php echo escape(addslashes($u['username'])); ?>')">Chat</button>
+                                    <button class="btn btn-sm" style="background: #FF9800; color: white; border: none; cursor: pointer; padding: 6px 12px; border-radius: 4px; font-size: 12px;" onclick="showUserActions(<?php echo $u['id']; ?>, '<?php echo escape($u['username']); ?>', '<?php echo $u['status']; ?>')">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -1079,6 +1135,174 @@ $token = csrf_token();
                 btn.innerText = 'Process All Pending Submissions';
             });
         }
+    </script>
+
+    <!-- User Actions Modal -->
+    <div id="user-actions-modal" style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    ">
+        <div style="
+            background: #1a1a2e;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+            color: #fff;
+            border: 1px solid #333;
+        ">
+            <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 18px;">
+                User: <span id="modal-username" style="color: #4CAF50;"></span>
+            </h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #aaa; font-size: 13px;">Current Status: <strong id="modal-status"></strong></p>
+            </div>
+            
+            <div id="modal-actions" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                <!-- Actions will be inserted here -->
+            </div>
+            
+            <button onclick="closeUserActionsModal()" style="
+                width: 100%;
+                padding: 10px;
+                background: #333;
+                color: #fff;
+                border: 1px solid #444;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 600;
+            ">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // User Management Functions
+        function showUserActions(userId, username, currentStatus) {
+            const modal = document.getElementById('user-actions-modal');
+            const actionsDiv = document.getElementById('modal-actions');
+            
+            document.getElementById('modal-username').innerText = username;
+            document.getElementById('modal-status').innerText = currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1);
+            
+            // Build actions based on current status
+            let html = '';
+            
+            if (currentStatus === 'active') {
+                html += `
+                    <button onclick="userAction(${userId}, 'suspend', '<?php echo $url_secret; ?>')" style="
+                        padding: 12px;
+                        background: #FFC107;
+                        color: #000;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        transition: background 0.2s;
+                    " onmouseover="this.style.background='#FFB300'" onmouseout="this.style.background='#FFC107'">
+                        ⏸️ Suspend User
+                    </button>
+                `;
+                html += `
+                    <button onclick="userAction(${userId}, 'ban', '<?php echo $url_secret; ?>')" style="
+                        padding: 12px;
+                        background: #f44336;
+                        color: #fff;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        transition: background 0.2s;
+                    " onmouseover="this.style.background='#d32f2f'" onmouseout="this.style.background='#f44336'">
+                        🚫 Ban User
+                    </button>
+                `;
+            } else if (currentStatus === 'suspended' || currentStatus === 'inactive') {
+                html += `
+                    <button onclick="userAction(${userId}, 'activate', '<?php echo $url_secret; ?>')" style="
+                        padding: 12px;
+                        background: #4CAF50;
+                        color: #fff;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        transition: background 0.2s;
+                    " onmouseover="this.style.background='#45a049'" onmouseout="this.style.background='#4CAF50'">
+                        ✓ Reactivate User
+                    </button>
+                `;
+            }
+            
+            html += `
+                <button onclick="userAction(${userId}, 'delete', '<?php echo $url_secret; ?>')" style="
+                    padding: 12px;
+                    background: #8B0000;
+                    color: #fff;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='#600000'" onmouseout="this.style.background='#8B0000'">
+                    🗑️ Permanently Delete
+                </button>
+            `;
+            
+            actionsDiv.innerHTML = html;
+            modal.style.display = 'flex';
+        }
+        
+        function closeUserActionsModal() {
+            document.getElementById('user-actions-modal').style.display = 'none';
+        }
+        
+        function userAction(userId, action, token) {
+            const actionMessage = {
+                'suspend': 'Are you sure you want to suspend this user?',
+                'ban': 'Are you sure you want to ban this user? They will no longer be able to log in.',
+                'activate': 'Are you sure you want to reactivate this user?',
+                'delete': 'WARNING: This will permanently delete this user and all their data (submissions, quests, etc). This cannot be undone. Continue?'
+            };
+            
+            if (!confirm(actionMessage[action])) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('user_action', action);
+            formData.append('user_id', userId);
+            formData.append('csrf_token', '<?php echo $token; ?>');
+            
+            fetch('admin.php?section=users&token=' + encodeURIComponent(token), {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.text())
+            .then(data => {
+                closeUserActionsModal();
+                location.reload();
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Error performing action: ' + err.message);
+            });
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('user-actions-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeUserActionsModal();
+            }
+        });
     </script>
     
     <?php require_once(__DIR__ . '/chat_widget.php'); ?>

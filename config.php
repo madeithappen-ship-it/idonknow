@@ -137,6 +137,23 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // ========================================
+// Verify User Status (check for suspension/bans)
+// ========================================
+if (isset($_SESSION['user_id'])) {
+    $stmt = $pdo->prepare("SELECT status FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user_status = $stmt->fetchColumn();
+    
+    // Force logout if user is suspended or inactive
+    if ($user_status !== 'active') {
+        session_destroy();
+        $_SESSION = [];
+        header('Location: login.php?reason=account_' . ($user_status === 'suspended' ? 'suspended' : 'banned'));
+        exit;
+    }
+}
+
+// ========================================
 // Security Headers
 // ========================================
 if (!headers_sent()) {
