@@ -1,41 +1,30 @@
 FROM php:8.2-apache
 
-# Set working directory
-WORKDIR /var/www/html
-
-# Install PHP extensions
+# Install dependencies and PDO MySQL
 RUN apt-get update && apt-get install -y \
-    default-mysql-client \
-    ca-certificates \
-    && docker-php-ext-install pdo pdo_mysql \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    libpng-dev \
+    libjpeg-dev \
+    libpq-dev \
+    zip \
+    unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && docker-php-ext-configure gd --with-jpeg \
+    && docker-php-ext-install gd pdo pdo_mysql
 
-# Increase PHP upload limits for videos
-RUN echo "upload_max_filesize = 50M\npost_max_size = 50M\nmemory_limit = 256M\n" > /usr/local/etc/php/conf.d/uploads.ini
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
 
-# Enable Apache modules
-RUN a2enmod rewrite headers
-
-# Create necessary directories
-RUN mkdir -p logs uploads/proofs && \
-    chmod 755 logs && \
-    chmod 755 uploads && \
-    chmod 755 uploads/proofs && \
-    chown -R www-data:www-data /var/www/html
+# Update Apache DocumentRoot if necessary (default is /var/www/html)
+# ENV APACHE_DOCUMENT_ROOT /var/www/html
+# RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+# RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 # Copy application files
 COPY . /var/www/html/
 
-# Set Apache document root
-ENV APACHE_DOCUMENT_ROOT=/var/www/html
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+# Ensure correct permissions
+RUN chown -R www-data:www-data /var/www/html/ \
+    && chmod -R 755 /var/www/html/
 
-# Expose port
+# Expose port (Render sets PORT env)
 EXPOSE 80
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
-
-# Start Apache
-CMD ["apache2-foreground"]

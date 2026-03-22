@@ -80,6 +80,37 @@ if ($section === 'quests' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Handle User Management
+if ($section === 'users' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $user_action = $_POST['user_action'] ?? '';
+    
+    if ($user_action === 'add' && verify_csrf($_POST['csrf_token'] ?? '')) {
+        $username = trim($_POST['username'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $level = (int)($_POST['level'] ?? 1);
+        $xp = (int)($_POST['xp'] ?? 0);
+        
+        if ($username && $email && $password) {
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("INSERT INTO users (username, email, password, level, xp) VALUES (?, ?, ?, ?, ?)");
+            try {
+                $stmt->execute([$username, $email, $hash, $level, $xp]);
+                $_SESSION['message'] = "User $username created successfully!";
+                $_SESSION['message_type'] = "success";
+            } catch (PDOException $e) {
+                $_SESSION['message'] = "Error creating user: " . $e->getMessage();
+                $_SESSION['message_type'] = "error";
+            }
+        } else {
+            $_SESSION['message'] = "Please fill completely.";
+            $_SESSION['message_type'] = "error";
+        }
+        header("Location: admin.php?section=users&token=" . urlencode($url_secret));
+        exit;
+    }
+}
+
 // Fetch stats
 $stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE status = 'active'");
 $user_count = $stmt->fetch()['count'];
@@ -396,6 +427,7 @@ $token = csrf_token();
                 <a href="?token=<?php echo $url_secret; ?>&section=submissions" class="<?= $section === 'submissions' ? 'active' : '' ?>">Submissions</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=quests" class="<?= $section === 'quests' ? 'active' : '' ?>">Manage Quests</a>
                 <a href="?token=<?php echo $url_secret; ?>&section=users" class="<?= $section === 'users' ? 'active' : '' ?>">Users</a>
+                <a href="?token=<?php echo $url_secret; ?>&section=settings" class="<?= $section === 'settings' ? 'active' : '' ?>">⚙️ Settings</a>
                 <a href="logout.php" class="logout-btn">Logout</a>
             </nav>
         </div>
@@ -467,8 +499,8 @@ $token = csrf_token();
                         <textarea name="message" placeholder="Type the announcement or direct message here..." style="padding: 10px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px; resize: vertical; min-height: 80px;"></textarea>
                         
                         <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; border: 1px dashed #4CAF50;">
-                            <label style="color: #ccc; font-size: 13px; display: block; margin-bottom: 5px;">🖼️ Attach an Image (Optional):</label>
-                            <input type="file" name="image" accept="image/*" style="color: #fff; font-size: 13px;">
+                            <label style="color: #ccc; font-size: 13px; display: block; margin-bottom: 5px;">🖼️/🎥 Attach an Image or Video (Optional):</label>
+                            <input type="file" name="image" accept="image/*,video/*" style="color: #fff; font-size: 13px;">
                         </div>
 
                         <div style="display: flex; gap: 10px;">
@@ -496,7 +528,10 @@ $token = csrf_token();
                                 <p><?php echo format_text($note['message']); ?></p>
                                 <?php if (!empty($note['image_path'])): ?>
                                     <div style="margin-top: 10px;">
-                                        <a href="<?php echo escape($note['image_path']); ?>" target="_blank" style="color: #64B5F6; text-decoration: underline; font-size: 12px;">🖼️ View Attached Image</a>
+                                        <?php $is_vid = preg_match('/\.(mp4|webm)$/i', $note['image_path']); ?>
+                                        <a href="<?php echo escape($note['image_path']); ?>" target="_blank" style="color: <?php echo $is_vid ? '#f0f' : '#64B5F6'; ?>; text-decoration: underline; font-size: 12px;">
+                                            <?php echo $is_vid ? '🎥 View Attached Video' : '🖼️ View Attached Image'; ?>
+                                        </a>
                                     </div>
                                 <?php endif; ?>
                                 <form method="POST" action="manage_notifications.php" style="position: absolute; top: 15px; right: 15px;" onsubmit="return confirm('Delete this notification?');">
@@ -685,7 +720,7 @@ $token = csrf_token();
                             <td><?php echo escape($sub['verification_status']); ?></td>
                             <td><?php echo date('M d, H:i', strtotime($sub['submitted_at'])); ?></td>
                             <td>
-                                <?php if (!empty($sub['file_path']) && file_exists($sub['file_path'])): ?>
+                                <?php if ((!empty($sub['file_path']) && file_exists($sub['file_path'])) || !empty($sub['text_proof'])): ?>
                                     <a href="view_proof.php?id=<?php echo $sub['id']; ?>" target="_blank" class="btn btn-info btn-sm">View Proof</a>
                                 <?php else: ?>
                                     No proof
@@ -706,6 +741,25 @@ $token = csrf_token();
 
             <!-- Users Section -->
             <div id="users" class="section <?= $section === 'users' ? 'active' : '' ?>">
+                
+                <div class="card" style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 15px;">➕ Create New User</h3>
+                    <form method="POST" action="admin.php?section=users&token=<?php echo urlencode($url_secret); ?>" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="hidden" name="csrf_token" value="<?php echo escape($token); ?>">
+                        <input type="hidden" name="user_action" value="add">
+                        
+                        <input type="text" name="username" required placeholder="Username" style="padding: 10px; flex: 1; min-width: 150px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px;">
+                        <input type="email" name="email" required placeholder="Email Address" style="padding: 10px; flex: 1; min-width: 200px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px;">
+                        <input type="text" name="password" required placeholder="Raw Password" style="padding: 10px; flex: 1; min-width: 150px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px;">
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" name="level" value="1" min="1" placeholder="Lvl" style="padding: 10px; width: 70px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px;">
+                            <input type="number" name="xp" value="0" min="0" placeholder="XP" style="padding: 10px; width: 80px; background: #262641; border: 1px solid #333; color: #fff; border-radius: 6px;">
+                            <button type="submit" class="btn btn-primary">Create Account</button>
+                        </div>
+                    </form>
+                </div>
+
                 <h2>Registered Users</h2>
                 <table class="table">
                     <thead>
@@ -743,6 +797,54 @@ $token = csrf_token();
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings" class="section <?= $section === 'settings' ? 'active' : '' ?>">
+                <h2>⚙️ System Settings</h2>
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 15px; color: #4CAF50;">🤖 AI Proof Verification</h3>
+                    <p style="margin-bottom: 15px; color: #aaa;">Enable AI to automatically verify, approve, or reject quest proof submissions based on keywords and confidence scores.</p>
+                    
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label for="ai-verify-toggle" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="ai-verify-toggle" style="width: 20px; height: 20px; cursor: pointer;">
+                                <span id="ai-status-text">Load...</span>
+                            </label>
+                        </div>
+                        <button id="ai-toggle-btn" class="btn btn-info" style="display: none;" onclick="toggleAIVerify()">Update Preference</button>
+                    </div>
+                    <div id="ai-message" style="margin-top: 10px; font-size: 12px; color: #aaa;"></div>
+                </div>
+
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px; color: #2196F3;">🔄 Batch Processing</h3>
+                    <p style="margin-bottom: 15px; color: #aaa;">Automatically process all pending submissions using AI verification when enabled.</p>
+                    
+                    <button class="btn" style="background: #2196F3; color: white; padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;" onclick="processBatchAI()">
+                        Process All Pending Submissions
+                    </button>
+                    
+                    <div id="batch-progress" style="margin-top: 15px; display: none;">
+                        <div style="font-size: 14px; margin-bottom: 10px;">
+                            ⏳ Processing submissions...
+                        </div>
+                        <div style="background: rgba(255, 255, 255, 0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div id="batch-progress-bar" style="background: #2196F3; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="batch-result" style="margin-top: 15px; padding: 15px; border-radius: 8px; display: none; background: rgba(76, 175, 80, 0.1); border-left: 4px solid #4CAF50;">
+                        <div id="batch-result-content"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 15px;">📊 Stats</h3>
+                    <p><strong>AI Auto-Verify:</strong> <span id="ai-stats">Loading...</span></p>
+                </div>
             </div>
         </div>
     </div>
@@ -826,6 +928,157 @@ $token = csrf_token();
                 })
                 .catch(e => console.error('Polling error:', e));
         }, 10000);
+
+        // ============================================
+        // AI Proof Verification Toggle
+        // ============================================
+        
+        // Load AI status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('settings')) {
+                loadAIStatus();
+                document.getElementById('ai-verify-toggle').addEventListener('change', function() {
+                    document.getElementById('ai-toggle-btn').style.display = 'block';
+                });
+            }
+        });
+
+        function loadAIStatus() {
+            fetch('toggle_ai_verify.php?action=get_ai_status')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const enabled = data.ai_enabled;
+                        document.getElementById('ai-verify-toggle').checked = enabled;
+                        document.getElementById('ai-status-text').innerText = enabled ? '✓ Enabled' : '✗ Disabled';
+                        document.getElementById('ai-stats').innerText = enabled ? 'Active - Auto-verifying submissions' : 'Disabled - Manual review only';
+                        
+                        if (enabled) {
+                            document.getElementById('ai-stats').style.color = '#4CAF50';
+                        } else {
+                            document.getElementById('ai-stats').style.color = '#f44336';
+                        }
+                    }
+                })
+                .catch(e => {
+                    console.error('Error loading AI status:', e);
+                    document.getElementById('ai-status-text').innerText = 'Error loading...';
+                });
+        }
+
+        function toggleAIVerify() {
+            const isCurrentlyEnabled = document.getElementById('ai-verify-toggle').checked;
+            const btn = document.getElementById('ai-toggle-btn');
+            
+            btn.disabled = true;
+            btn.innerText = 'Updating...';
+            
+            fetch('toggle_ai_verify.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=toggle_ai_verify'
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const message = document.getElementById('ai-message');
+                    message.style.color = '#4CAF50';
+                    message.innerText = '✓ ' + data.message;
+                    
+                    // Hide button and reload status
+                    btn.style.display = 'none';
+                    btn.innerText = 'Update Preference';
+                    btn.disabled = false;
+                    
+                    // Wait a moment then reload
+                    setTimeout(() => {
+                        loadAIStatus();
+                    }, 500);
+                    
+                    // Log audit trail
+                    console.log('[AI VERIFY] Toggled:', data.ai_enabled);
+                } else {
+                    const message = document.getElementById('ai-message');
+                    message.style.color = '#f44336';
+                    message.innerText = '✗ Error: ' + (data.error || 'Failed to toggle');
+                    btn.disabled = false;
+                    btn.innerText = 'Update Preference';
+                }
+            })
+            .catch(e => {
+                console.error('Toggle error:', e);
+                const message = document.getElementById('ai-message');
+                message.style.color = '#f44336';
+                message.innerText = '✗ Network error: ' + e.message;
+                btn.disabled = false;
+                btn.innerText = 'Update Preference';
+            });
+        }
+
+        // ============================================
+        // Batch AI Processing
+        // ============================================
+        
+        function processBatchAI() {
+            const progressDiv = document.getElementById('batch-progress');
+            const resultDiv = document.getElementById('batch-result');
+            const btn = event.target;
+            
+            progressDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.innerText = '⏳ Processing...';
+            
+            fetch('process_ai_batch.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=process_batch'
+            })
+            .then(r => r.json())
+            .then(data => {
+                progressDiv.style.display = 'none';
+                
+                if (data.success) {
+                    const html = `
+                        <div style="font-weight: 600; margin-bottom: 10px; color: #4CAF50;">✓ Batch Processing Complete</div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; color: #ddd; font-size: 13px;">
+                            <div>📊 Processed: <strong>${data.processed}</strong></div>
+                            <div>✓ Approved: <strong style="color: #4CAF50;">${data.approved}</strong></div>
+                            <div>✗ Rejected: <strong style="color: #f44336;">${data.rejected}</strong></div>
+                            <div>👀 Manual Review: <strong style="color: #FFC107;">${data.manual_review}</strong></div>
+                        </div>
+                    `;
+                    document.getElementById('batch-result-content').innerHTML = html;
+                    resultDiv.style.display = 'block';
+                } else {
+                    const errorHtml = `
+                        <div style="font-weight: 600; color: #f44336;">✗ Error: ${data.error || 'Failed to process'}</div>
+                    `;
+                    document.getElementById('batch-result-content').innerHTML = errorHtml;
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.borderLeftColor = '#f44336';
+                    resultDiv.style.background = 'rgba(244, 67, 54, 0.1)';
+                }
+                
+                btn.disabled = false;
+                btn.innerText = 'Process All Pending Submissions';
+            })
+            .catch(e => {
+                console.error('Batch processing error:', e);
+                progressDiv.style.display = 'none';
+                
+                const errorHtml = `
+                    <div style="font-weight: 600; color: #f44336;">✗ Network Error: ${e.message}</div>
+                `;
+                document.getElementById('batch-result-content').innerHTML = errorHtml;
+                resultDiv.style.display = 'block';
+                resultDiv.style.borderLeftColor = '#f44336';
+                resultDiv.style.background = 'rgba(244, 67, 54, 0.1)';
+                
+                btn.disabled = false;
+                btn.innerText = 'Process All Pending Submissions';
+            });
+        }
     </script>
     
     <?php require_once(__DIR__ . '/chat_widget.php'); ?>

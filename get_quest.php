@@ -20,7 +20,7 @@ $user_id = $_SESSION['user_id'];
 
 // Get current quest if exists
 $stmt = $pdo->prepare("
-    SELECT uq.id, uq.quest_id, q.* FROM user_quests uq
+    SELECT q.*, uq.id as user_quest_id, uq.status FROM user_quests uq
     JOIN quests q ON uq.quest_id = q.id
     WHERE uq.user_id = ? AND uq.status IN ('assigned', 'in_progress', 'submitted')
     ORDER BY uq.assigned_at DESC
@@ -38,8 +38,8 @@ if ($current_quest && !$force_insane) {
         'success' => true,
         'current' => true,
         'quest' => [
-            'id' => $current_quest['id'],
-            'quest_id' => $current_quest['quest_id'],
+            'id' => $current_quest['user_quest_id'],
+            'quest_id' => $current_quest['id'],
             'title' => $current_quest['title'],
             'description' => $current_quest['description'],
             'difficulty' => $current_quest['difficulty'],

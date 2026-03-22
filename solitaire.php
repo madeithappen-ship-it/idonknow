@@ -181,6 +181,7 @@ if ($user['level'] < 5 && !is_admin()) {
         <a href="dashboard.php">← Back to Dashboard</a>
         <div style="font-weight: bold; color: #f59e0b;">Solitaire Quests</div>
         <div>
+            <button onclick="location.reload()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 15px; font-weight: bold; transition: 0.2s;">➕ New Game</button>
             <button onclick="reshuffle()" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #f59e0b; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 15px; font-weight: bold; transition: 0.2s;">↻ Reshuffle (+50 Moves)</button>
             <span id="score-readout" style="font-size: 14px; color: #aaa;">Score: 0 | Moves: 0</span>
         </div>
@@ -228,7 +229,8 @@ if ($user['level'] < 5 && !is_admin()) {
             </div>
             
             <div id="quest-upload-area" style="display: none; margin-bottom: 15px;">
-                <input type="file" id="solitaire-proof" accept="image/*,video/*" style="margin-bottom: 15px; color: #fff; width: 100%; border: 1px solid #333; padding: 10px; border-radius: 6px;">
+                <textarea id="solitaire-text-proof" placeholder="Type out your proof here... (Optional if uploading file)" rows="3" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #0f172a; color: #fff; margin-bottom: 15px; font-family: inherit; font-size: 14px; box-sizing: border-box;"></textarea>
+                <input type="file" id="solitaire-proof" accept="image/*,video/*" style="margin-bottom: 15px; color: #fff; width: 100%; border: 1px solid #333; padding: 10px; border-radius: 6px; box-sizing: border-box;">
                 <button onclick="submitSolitaireProof()" style="background: #10b981; color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 4px 10px rgba(16,185,129,0.3);">Submit Proof & Resume Game</button>
             </div>
             

@@ -509,12 +509,18 @@ $token = csrf_token();
     <div class="navbar">
         <h1>⚡ Side Quest</h1>
         <div class="user-menu">
-            <span>
-                <?php if (is_admin()): ?>
-                    <span class="admin-dot">•</span>
-                <?php endif; ?>
-                Level <?php echo $user['level']; ?> - <?php echo escape($user['username']); ?>
-            </span>
+            <div class="user-info" style="display:flex; align-items:center; gap: 10px;">
+                <a href="profile.php" style="display:flex; align-items:center; gap: 10px; color:#fff; text-decoration:none;">
+                    <?php if ($user['avatar_url']): ?>
+                        <img src="<?php echo escape($user['avatar_url']); ?>" style="width:36px; height:36px; border-radius:50%; object-fit:cover; border: 2px solid #4CAF50;">
+                    <?php else: ?>
+                        <div style="width:36px; height:36px; border-radius:50%; background:#334155; display:flex; align-items:center; justify-content:center; border: 2px solid #4CAF50;">
+                            <span style="font-size:16px;">👤</span>
+                        </div>
+                    <?php endif; ?>
+                    <span>Level <?php echo $user['level']; ?> - <?php echo escape($user['display_name'] ?: $user['username']); ?></span>
+                </a>
+            </div>
             <?php if (is_admin()): ?>
                 <a href="admin.php?token=<?php echo urlencode(config('admin_url_secret')); ?>" class="admin-link">Admin Panel</a>
             <?php endif; ?>
@@ -584,7 +590,12 @@ $token = csrf_token();
                     <?php endif; ?>
                     <?php if (!empty($note['image_path'])): ?>
                         <div style="margin-top: 15px;">
-                            <img src="<?php echo escape($note['image_path']); ?>" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.5);" alt="Notification Attachment">
+                            <?php $is_video_notif = preg_match('/\.(mp4|webm)$/i', $note['image_path']); ?>
+                            <?php if ($is_video_notif): ?>
+                                <video src="<?php echo escape($note['image_path']); ?>" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.5);" autoplay loop muted playsinline></video>
+                            <?php else: ?>
+                                <img src="<?php echo escape($note['image_path']); ?>" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.5);" alt="Notification Attachment">
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                     <div style="font-size: 12px; color: #aaa; margin-top: 8px;">
@@ -593,6 +604,43 @@ $token = csrf_token();
                 </div>
             </div>
         <?php endforeach; ?>
+        
+        <!-- Friends & Social Section -->
+        <div class="section" style="margin-bottom: 25px;">
+            <h2 style="color: #64B5F6; margin-bottom: 15px; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                👥 Friends & Social
+            </h2>
+            
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); display: flex; gap: 20px; flex-wrap: wrap;">
+                
+                <!-- Search Users -->
+                <div style="flex: 1; min-width: 250px;">
+                    <h3 style="color: #cbd5e1; font-size: 14px; margin-bottom: 10px;">Find Players</h3>
+                    <div style="margin-bottom: 10px;">
+                        <button id="show-all-users-btn" class="btn btn-primary" style="width: 100%; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <span style="font-size: 16px;">➕</span> Browse All Players
+                        </button>
+                    </div>
+                    <div id="friend-search-results" style="max-height: 200px; overflow-y: auto; background: #1e293b; border-radius: 4px;"></div>
+                </div>
+
+                <!-- Pending Requests -->
+                <div style="flex: 1; min-width: 250px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 20px;" id="pending-friends-col">
+                    <h3 style="color: #cbd5e1; font-size: 14px; margin-bottom: 10px;">Pending Requests</h3>
+                    <div id="pending-friends-list" style="max-height: 200px; overflow-y: auto;">
+                        <div style="color: #888; font-style: italic; font-size: 12px;">No pending requests.</div>
+                    </div>
+                </div>
+
+                <!-- My Friends -->
+                <div style="flex: 1; min-width: 250px; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 20px;">
+                    <h3 style="color: #cbd5e1; font-size: 14px; margin-bottom: 10px;">My Friends</h3>
+                    <div id="my-friends-list" style="max-height: 200px; overflow-y: auto;">
+                        <div style="color: #888; font-style: italic; font-size: 12px;">Loading friends...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <!-- Daily Quest Section -->
         <?php if ($available_daily_quest || $active_daily_quest): ?>
@@ -646,9 +694,11 @@ $token = csrf_token();
                     <?php endif; ?>
                     
                     <?php if ($quest['status'] === 'assigned' || $quest['status'] === 'in_progress'): ?>
+                        <textarea id="textProof_daily" placeholder="Write out your completion proof here... (Optional if uploading file)" rows="3" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #262641; color: #fff; margin-bottom: 15px; font-family: inherit; font-size: 14px; max-width: 100%; box-sizing: border-box;"></textarea>
+
                         <div class="upload-area" onclick="document.getElementById('proofInput_daily').click();">
                             <div>📸 Click or drag to upload daily proof</div>
-                            <small style="color: #aaa;">Max 50MB, images or videos</small>
+                            <small style="color: #aaa;">Max 50MB, images or videos (Optional if writing text)</small>
                         </div>
                         <input type="file" id="proofInput_daily" name="proof" accept="image/*,video/*" onchange="previewProof(event, 'daily')" style="display:none;">
                         <div id="uploadPreview_daily" style="margin: 20px 0;"></div>
@@ -662,6 +712,17 @@ $token = csrf_token();
             <?php endif; ?>
         </div>
         <?php endif; ?>
+        
+        <!-- Chess Minigame -->
+        <div class="section" style="margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 25px; border-radius: 12px; border: 2px solid rgba(59, 130, 246, 0.5); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,0,0,0.6); flex-wrap: wrap; gap: 15px;">
+                <div style="flex: 1; min-width: 250px;">
+                    <h2 style="color: #60a5fa; margin-bottom: 8px; font-size: 22px;">♟️ Grandmaster Arena</h2>
+                    <p style="color: #bfdbfe; font-size: 15px;">Play Real-Time Multiplayer Chess or challenge the Computer!</p>
+                </div>
+                <a href="chess/index.php" class="button" style="background: #3b82f6; color: #fff; text-decoration: none; padding: 12px 25px; font-weight: bold; border-radius: 30px; border: none; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); white-space: nowrap;">Play Chess</a>
+            </div>
+        </div>
         
         <!-- Solitaire Minigame -->
         <?php if ($user['level'] >= 5 || is_admin()): ?>
@@ -686,9 +747,32 @@ $token = csrf_token();
                 </div>
                 <a href="hunt.php" class="button" style="background: #000; color: #0ff; text-decoration: none; padding: 12px 25px; font-weight: bold; border-radius: 30px; border: 2px solid #0ff; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8); white-space: nowrap;">Jack In</a>
             </div>
+        <?php endif; ?>
+        
+        <!-- Chaos Wheel Minigame -->
+        <?php if ($user['level'] >= 20 || is_admin()): ?>
+        <div class="section" style="margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #4c1d95 0%, #000 100%); padding: 25px; border-radius: 12px; border: 2px solid #8b5cf6; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(139,92,246,0.4); flex-wrap: wrap; gap: 15px;">
+                <div style="flex: 1; min-width: 250px;">
+                    <h2 style="color: #c4b5fd; margin-bottom: 8px; font-size: 22px; text-shadow: 0 0 10px #7c3aed;">🎡 Chaos Wheel</h2>
+                    <p style="color: #ddd; font-size: 15px; font-weight: bold;">Spin the Wheel of Destiny once a day. Win massive XP, lose progress, or trigger insane quests. Do you feel lucky?</p>
+                </div>
+                <a href="wheel.php" class="button" style="background: #eab308; color: #000; text-decoration: none; padding: 12px 25px; font-weight: bold; border-radius: 30px; border: 2px solid #fde047; box-shadow: 0 4px 15px rgba(234, 179, 8, 0.6); white-space: nowrap;">Spin Now</a>
+            </div>
+        </div>
+        
+        <!-- Dice Game Minigame -->
+        <div class="section" style="margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #7f1d1d 0%, #000 100%); padding: 25px; border-radius: 12px; border: 2px solid #ef4444; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 25px rgba(239,68,68,0.4); flex-wrap: wrap; gap: 15px;">
+                <div style="flex: 1; min-width: 250px;">
+                    <h2 style="color: #fca5a5; margin-bottom: 8px; font-size: 22px; text-shadow: 0 0 10px #ef4444;">🎲 Dice Roll (New!)</h2>
+                    <p style="color: #ddd; font-size: 15px; font-weight: bold;">Test your fate. Roll 1-6 to randomly assign quest difficulty. Roll a 6 for immediate Insane rewards!</p>
+                </div>
+                <a href="dice.php" class="button" style="background: #ef4444; color: #fff; text-decoration: none; padding: 12px 25px; font-weight: bold; border-radius: 30px; border: 2px solid #fca5a5; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.6); white-space: nowrap;">Roll Dice</a>
+            </div>
         </div>
         <?php endif; ?>
-
+        
         <!-- INSANE MODE UNLOCK -->
         <?php if ($user['level'] >= 10): ?>
         <div class="section" style="margin-bottom: 30px; animation: pulseRed 2s infinite;">
@@ -762,9 +846,11 @@ $token = csrf_token();
                     <?php if ($current_quest['status'] === 'assigned' || $current_quest['status'] === 'in_progress'): ?>
                         <div><strong>Status:</strong> In Progress - Submit your proof below</div>
                         
+                        <textarea id="textProof_regular" placeholder="Write out your completion proof here... (Optional if uploading file)" rows="3" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #262641; color: #fff; margin-top: 15px; margin-bottom: 15px; font-family: inherit; font-size: 14px; max-width: 100%; box-sizing: border-box;"></textarea>
+
                         <div class="upload-area" onclick="document.getElementById('proofInput_regular').click();">
                             <div>📸 Click or drag to upload proof</div>
-                            <small style="color: #aaa;">Max 50MB, images or videos (JPG, PNG, GIF, WebP, MP4, WebM)</small>
+                            <small style="color: #aaa;">Max 50MB, images or videos (Optional if writing text)</small>
                         </div>
                         <input type="file" id="proofInput_regular" name="proof" accept="image/*,video/*" onchange="previewProof(event, 'regular')" style="display:none;">
                         
@@ -902,13 +988,21 @@ $token = csrf_token();
         }
         
         function submitProof(questId, type) {
-            if (!selectedFiles[type]) {
-                alert('Please select an image or video first');
+            const textProofField = document.getElementById('textProof_' + type);
+            const textContent = textProofField ? textProofField.value.trim() : '';
+            
+            if (!selectedFiles[type] && !textContent) {
+                alert('Please upload a file or write a text submission first!');
                 return;
             }
             
             const formData = new FormData();
-            formData.append('proof', selectedFiles[type]);
+            if (selectedFiles[type]) {
+                formData.append('proof', selectedFiles[type]);
+            }
+            if (textContent) {
+                formData.append('text_proof', textContent);
+            }
             formData.append('user_quest_id', questId);
             
             const btn = document.getElementById('submitBtn_' + type);
@@ -1007,6 +1101,8 @@ $token = csrf_token();
                 .catch(e => console.error(e));
         }, 5000);
     </script>
+    
+    <script src="assets/js/friends.js"></script>
     
     <?php require_once(__DIR__ . '/chat_widget.php'); ?>
 </body>

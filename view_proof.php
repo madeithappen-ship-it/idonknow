@@ -30,28 +30,29 @@ $stmt = $pdo->prepare("
 $stmt->execute([$submission_id]);
 $submission = $stmt->fetch();
 
-if (!$submission || empty($submission['file_path'])) {
+if (!$submission || (empty($submission['file_path']) && empty($submission['text_proof']))) {
     http_response_code(404);
     die('Proof not found');
 }
 
-$file_path = $submission['file_path'];
+$has_file = !empty($submission['file_path']) && file_exists($submission['file_path']);
+$file_url = null;
+$is_video = false;
+$width = 800;
+$height = 600;
 
-if (!file_exists($file_path)) {
-    http_response_code(404);
-    die('File not found');
+if ($has_file) {
+    $file_path = $submission['file_path'];
+    $is_video = strpos($submission['mime_type'] ?? '', 'video/') === 0;
+    
+    if (!$is_video) {
+        $image_info = @getimagesize($file_path);
+        $width = $image_info[0] ?? 800;
+        $height = $image_info[1] ?? 600;
+    }
+    
+    $file_url = 'uploads/proofs/' . rawurlencode($submission['file_name']);
 }
-
-// Get image dimensions for display
-$is_video = strpos($submission['mime_type'], 'video/') === 0;
-if (!$is_video) {
-    $image_info = @getimagesize($file_path);
-    $width = $image_info[0] ?? 800;
-    $height = $image_info[1] ?? 600;
-}
-
-// Access the file securely through direct URL
-$file_url = 'uploads/proofs/' . rawurlencode($submission['file_name']);
 
 ?>
 <!DOCTYPE html>
@@ -164,17 +165,60 @@ $file_url = 'uploads/proofs/' . rawurlencode($submission['file_name']);
     <div class="header">
         <h1>Proof Review</h1>
         <p><strong>User:</strong> <?php echo htmlspecialchars($submission['username']); ?> | <strong>Quest:</strong> <?php echo htmlspecialchars($submission['quest_title']); ?> | <strong>Submitted:</strong> <?php echo date('M d, Y H:i', strtotime($submission['submitted_at'])); ?></p>
+        
+        <?php 
+        // Check AI verification status
+        $stmt = $pdo->prepare("SELECT setting_value FROM global_settings WHERE setting_key = 'ai_verify_proofs'");
+        $stmt->execute();
+        $ai_enabled = $stmt->fetch(PDO::FETCH_ASSOC)['setting_value'] === '1';
+        ?>
+        
+        <div style="margin-top: 10px; font-size: 13px; color: #aaa;">
+            <?php if ($ai_enabled): ?>
+                <span style="background: rgba(76, 175, 80, 0.2); color: #4CAF50; padding: 4px 8px; border-radius: 4px;">
+                    ✓ AI Verification: ENABLED
+                </span>
+            <?php else: ?>
+                <span style="background: rgba(100, 100, 100, 0.2); color: #999; padding: 4px 8px; border-radius: 4px;">
+                    ✗ AI Verification: DISABLED
+                </span>
+            <?php endif; ?>
+            
+            <?php if (!empty($submission['confidence_score'])): ?>
+                | <strong>AI Confidence:</strong> 
+                <?php 
+                $confidence = $submission['confidence_score'] * 100;
+                $confidence_color = $confidence >= 85 ? '#4CAF50' : ($confidence >= 50 ? '#FFC107' : '#f44336');
+                ?>
+                <span style="color: <?php echo $confidence_color; ?>;"><?php echo round($confidence, 1); ?>%</span>
+                <?php if ($submission['keywords_found']): ?>
+                    | <strong>Keywords:</strong> <span style="color: #4CAF50;"><?php echo htmlspecialchars($submission['keywords_found']); ?></span>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
     </div>
     
     <div class="content">
         <div class="proof-container">
-            <?php if ($is_video): ?>
+            <?php if ($has_file && $is_video): ?>
                 <video src="<?php echo htmlspecialchars($file_url); ?>" controls autoplay loop style="max-width: 100%; max-height: 800px; border-radius: 8px;"></video>
-            <?php else: ?>
+            <?php elseif ($has_file && !$is_video): ?>
                 <img src="<?php echo htmlspecialchars($file_url); ?>" alt="Proof submission" class="proof-image" style="max-width: <?php echo min($width, 800); ?>px; max-height: <?php echo min($height, 600); ?>px;">
             <?php endif; ?>
             
+            <?php if (!empty($submission['text_proof'])): ?>
+                <div style="margin-top: 20px; padding: 20px; background: rgba(0, 0, 0, 0.4); border-radius: 8px; border-left: 4px solid #f0f;">
+                    <h3 style="color: #f0f; margin-top: 0; margin-bottom: 10px; font-size: 14px; text-transform: uppercase;">TEXT PROOF SUBMISSION:</h3>
+                    <div style="font-size: 16px; line-height: 1.6; color: #fff; white-space: pre-wrap;"><?php echo htmlspecialchars($submission['text_proof']); ?></div>
+                </div>
+            <?php endif; ?>
+            
             <div class="actions">
+                <?php if ($ai_enabled && $submission['verification_status'] === 'pending'): ?>
+                    <button class="btn" style="background: #2196F3; color: white;" onclick="aiVerifySubmission()" id="ai-verify-btn">
+                        🤖 AI Verify
+                    </button>
+                <?php endif; ?>
                 <button class="btn btn-success" onclick="approveSubmission()">Approve</button>
                 <button class="btn btn-danger" onclick="rejectSubmission()">Reject</button>
                 <button class="btn btn-secondary" onclick="window.close()">Close</button>
@@ -183,6 +227,42 @@ $file_url = 'uploads/proofs/' . rawurlencode($submission['file_name']);
     </div>
 
     <script>
+        function aiVerifySubmission() {
+            const btn = document.getElementById('ai-verify-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Verifying...';
+            
+            fetch('ai_verify_proof.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=auto_verify&submission_id=<?php echo $submission_id; ?>'
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const msg = data.verified_status === 'approved' 
+                        ? `✓ AI Auto-Approved!\nConfidence: ${data.confidence.toFixed(1)}%\n\n${data.reasoning}`
+                        : `✗ AI Auto-Rejected\nConfidence: ${data.confidence.toFixed(1)}%\n\n${data.reasoning}`;
+                    
+                    alert(msg);
+                    window.opener.location.reload();
+                    window.close();
+                } else {
+                    alert('AI Verification Error: ' + (data.error || 'Failed to verify'));
+                    btn.disabled = false;
+                    btn.textContent = '🤖 AI Verify';
+                }
+            })
+            .catch(err => {
+                console.error('AI verification error:', err);
+                alert('Error: unable to run AI verification');
+                btn.disabled = false;
+                btn.textContent = '🤖 AI Verify';
+            });
+        }
+
         function approveSubmission() {
             if (confirm('Are you sure you want to approve this submission?')) {
                 fetch('approve.php', {

@@ -64,7 +64,7 @@ $db_config = [
 // Application Configuration
 $app_config = [
     'app_name' => 'MyLifeIsBoringAndIWantToDoASideQuestButDontKnowWhatToDo',
-    'app_url' => getenv('APP_URL') ?: 'http://localhost',
+    'app_url' => getenv('APP_URL') ?: (getenv('RENDER_EXTERNAL_URL') ?: 'http://localhost'),
     'upload_dir' => __DIR__ . '/uploads/',
     'max_upload_size' => 50 * 1024 * 1024, // 50MB
     'allowed_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov'],
@@ -290,4 +290,9 @@ if (isset($_SESSION['message'])) {
     $message = $_SESSION['message'];
     $message_type = $_SESSION['message_type'] ?? 'info';
     unset($_SESSION['message'], $_SESSION['message_type']);
+}
+
+// Update last_seen presence
+if (is_logged_in()) {
+    $pdo->prepare("UPDATE users SET last_seen = NOW() WHERE id = ?")->execute([$_SESSION['user_id']]);
 }

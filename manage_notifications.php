@@ -7,6 +7,11 @@ if (!is_admin()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // If POST is completely empty but CONTENT_LENGTH is high, PHP dropped it due to post_max_size
+    if (empty($_POST) && isset($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > 0) {
+        die('Upload failed. The file you attempted to upload exceeds the server post_max_size (8MB). Please upload a smaller compressed video or restart your PHP server with higher limits: php -d upload_max_filesize=100M -d post_max_size=100M -S localhost:8000');
+    }
+
     if (!verify_csrf($_POST['csrf_token'] ?? '')) {
         die('Invalid CSRF token');
     }
@@ -37,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($hasImage) {
                 if ($_FILES['image']['error'] === UPLOAD_ERR_OK) {
                     $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-                    $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                    $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm'];
                     if (in_array(strtolower($ext), $allowed)) {
                         if (!is_dir(__DIR__ . '/uploads/notifications')) {
                             mkdir(__DIR__ . '/uploads/notifications', 0755, true);
@@ -53,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             exit;
                         }
                     } else {
-                        $_SESSION['message'] = "Invalid file type. Only JPG, PNG, GIF, WEBP allowed.";
+                        $_SESSION['message'] = "Invalid file type. Only JPG, PNG, GIF, WEBP, MP4, WEBM allowed.";
                         $_SESSION['message_type'] = "error";
                         header('Location: ' . $return_url);
                         exit;

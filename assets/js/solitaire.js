@@ -476,14 +476,22 @@ function acceptQuest() {
 
 function submitSolitaireProof() {
     let fileInput = document.getElementById('solitaire-proof');
-    if (!fileInput.files.length) {
-        alert("You cannot proceed without a photo or video proof of completion!");
+    let textInput = document.getElementById('solitaire-text-proof');
+    let textContent = textInput ? textInput.value.trim() : '';
+
+    if (!fileInput.files.length && !textContent) {
+        alert("You cannot proceed without a photo, video, OR text submission of completion!");
         return;
     }
     
     let formData = new FormData();
     formData.append("user_quest_id", activeUserQuestId);
-    formData.append("proof", fileInput.files[0]);
+    if (fileInput.files.length) {
+        formData.append("proof", fileInput.files[0]);
+    }
+    if (textContent) {
+        formData.append("text_proof", textContent);
+    }
     
     document.getElementById('quest-upload-area').innerHTML = "<p style='color: #10b981; font-weight: bold;'>Uploading your payload to Admin review queue...</p>";
     

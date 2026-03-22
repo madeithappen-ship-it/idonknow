@@ -1,8 +1,10 @@
 services:
   - type: web
-    name: sidequest
-    runtime: docker
-    plan: starter
+    name: boringlife
+    env: docker
+    region: ohio
+    plan: free # Can be updated based on Render user tier
+    branch: main
     envVars:
       - key: APP_ENV
         value: production
@@ -16,9 +18,7 @@ services:
         value: avnadmin
       - key: DB_NAME
         value: defaultdb
-      - key: APP_URL
-        value: https://mylifeisboring.onrender.com
-      - key: ADMIN_URL_SECRET
-        value: x9_admin_portal_hidden
-      - key: SESSION_TIMEOUT
-        value: "86400"
+      - key: DB_PASS
+        sync: false # Requires manual entry in the Render Dashboard upon deployment
+      - key: DB_SSL
+        value: "true"

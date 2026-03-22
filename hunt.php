@@ -21,6 +21,7 @@ if ($user['level'] < 10 && !is_admin()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cyber Hunt - Side Quest</title>
+    <script>const CSRF_TOKEN = "<?php echo escape($token); ?>";</script>
     <style>
         body, html {
             margin: 0;
@@ -163,7 +164,10 @@ if ($user['level'] < 10 && !is_admin()) {
 <body>
 
     <div class="navbar">
-        <a href="dashboard.php">◄ Exit Simulation</a>
+        <div>
+            <a href="dashboard.php">◄ Exit Simulation</a>
+            <a href="hunt.php" style="margin-left: 10px; border-color: #f0f; color: #f0f;">↻ Generate New Map</a>
+        </div>
         <div style="font-weight: bold; color: #f0f; text-shadow: 0 0 10px #f0f;">CYBER_HUNT_v1</div>
     </div>
 
@@ -195,7 +199,8 @@ if ($user['level'] < 10 && !is_admin()) {
             </div>
             
             <div id="quest-upload-area" style="display: none; margin-bottom: 15px;">
-                <input type="file" id="hunt-proof" accept="image/*,video/*" style="margin-bottom: 15px; color: #0ff; width: 100%; border: 1px solid #0ff; padding: 10px; border-radius: 6px; background: #000;">
+                <textarea id="hunt-text-proof" placeholder="Type out your proof here... (Optional if uploading file)" rows="3" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #0ff; background: #000; color: #0ff; margin-bottom: 15px; font-family: inherit; font-size: 14px; box-sizing: border-box;"></textarea>
+                <input type="file" id="hunt-proof" accept="image/*,video/*" style="margin-bottom: 15px; color: #0ff; width: 100%; border: 1px solid #0ff; padding: 10px; border-radius: 6px; background: #000; box-sizing: border-box;">
                 <button onclick="submitHuntProof()" style="background: #0ff; color: #000; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 0 15px rgba(0,255,255,0.5);">UPLOAD PAYLOAD & RESUME</button>
             </div>
             

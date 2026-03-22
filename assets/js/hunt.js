@@ -425,11 +425,26 @@ function triggerQuestSequence(treasureObj) {
         .then(r => r.json())
         .then(data => {
             if(data.success && data.quest) {
+                if(data.quest.status === 'submitted') {
+                    document.getElementById('quest-text').innerHTML = `
+                        <div style="color: #FFC107; font-size: 16px; margin-bottom: 10px;">⏳ QUEST PENDING ADMIN REVIEW</div>
+                        <div style="font-size: 14px; color: #aaa;">You already submitted an extraction payload for this sector.<br><br><b>${data.quest.title}</b><br><br>Please wait for an Admin to verify your offline trace before collecting new anomaly data!</div>
+                    `;
+                    document.getElementById('quest-actions').style.display = 'block';
+                    document.getElementById('quest-upload-area').style.display = 'none';
+                    document.getElementById('quest-actions').innerHTML = `<button onclick="skipQuest()" style="background: transparent; border: 1px solid #0ff; color: #0ff; padding: 10px 20px; border-radius: 6px; cursor: pointer; width: 100%;">Resume Scanning (Close Panel)</button>`;
+                    return;
+                }
+                
                 activeUserQuestId = data.quest.id;
                 document.getElementById('quest-text').innerHTML = `
                     <div style="color: #f0f; font-size: 14px; text-transform: uppercase;">[ ${data.quest.difficulty} ]</div>
                     <div style="margin: 10px 0;">${data.quest.title}</div>
                     <div style="font-size: 14px; color: #aaa;">${data.quest.description}</div>
+                `;
+                document.getElementById('quest-actions').innerHTML = `
+                    <button onclick="acceptQuest()" style="background: #0ff; color: #000; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; box-shadow: 0 0 15px rgba(0,255,255,0.5);">ACCEPT DIAGNOSTIC</button>
+                    <button onclick="skipQuest()" style="background: transparent; border: 1px solid #f0f; color: #f0f; padding: 10px 20px; border-radius: 6px; cursor: pointer; width: 100%;">BYPASS ANOMALY (Ignore)</button>
                 `;
             } else {
                 document.getElementById('quest-text').innerText = "Decryption failed. Connection lost.";
@@ -450,18 +465,40 @@ function skipQuest() {
     isLocked = false;
     document.getElementById('quest-modal').style.display = 'none';
     saveState();
+    
+    if (activeUserQuestId) {
+        let formData = new URLSearchParams();
+        formData.append("user_quest_id", activeUserQuestId);
+        formData.append("csrf_token", CSRF_TOKEN);
+        
+        fetch('skip_quest.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        }).catch(err => console.error(err));
+        
+        activeUserQuestId = null;
+    }
 }
 
 function submitHuntProof() {
     let fileInput = document.getElementById('hunt-proof');
-    if (!fileInput.files.length) {
-        alert("Payload requires a verified media block (Photo/Video Upload)");
+    let textInput = document.getElementById('hunt-text-proof');
+    let textContent = textInput ? textInput.value.trim() : '';
+    
+    if (!fileInput.files.length && !textContent) {
+        alert("Payload requires a verified media block (Photo/Video Upload) OR a text proxy");
         return;
     }
     
     let formData = new FormData();
     formData.append("user_quest_id", activeUserQuestId);
-    formData.append("proof", fileInput.files[0]);
+    if (fileInput.files.length) {
+        formData.append("proof", fileInput.files[0]);
+    }
+    if (textContent) {
+        formData.append("text_proof", textContent);
+    }
     
     document.getElementById('quest-upload-area').innerHTML = "<p style='color: #0ff'>Transmitting...</p>";
     

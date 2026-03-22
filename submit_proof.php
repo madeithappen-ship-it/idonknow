@@ -46,55 +46,67 @@ if (!$user_quest) {
     exit;
 }
 
-// Check if file is uploaded
-if (!isset($_FILES['proof']) || $_FILES['proof']['error'] !== UPLOAD_ERR_OK) {
+// Check if file or text is uploaded
+$has_file = isset($_FILES['proof']) && $_FILES['proof']['error'] === UPLOAD_ERR_OK;
+$text_proof = isset($_POST['text_proof']) && trim($_POST['text_proof']) !== '' ? trim($_POST['text_proof']) : null;
+
+if (!$has_file && empty($text_proof)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'No file uploaded or upload error']);
+    echo json_encode(['success' => false, 'error' => 'You must upload a file or write a text submission']);
     exit;
 }
 
-$file = $_FILES['proof'];
-$max_size = config('max_upload_size');
-$allowed_mimes = config('allowed_mimes');
+$filename = null;
+$upload_path = null;
+$file_size = null;
+$mime_type = null;
 
-if ($file['size'] > $max_size) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'File too large (max 50MB)']);
-    exit;
-}
+if ($has_file) {
+    $file = $_FILES['proof'];
+    $max_size = config('max_upload_size');
+    $allowed_mimes = config('allowed_mimes');
 
-// Validate MIME type
-$finfo = finfo_open(FILEINFO_MIME_TYPE);
-$mime_type = finfo_file($finfo, $file['tmp_name']);
-finfo_close($finfo);
-
-if (!in_array($mime_type, $allowed_mimes)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Invalid file type (images and videos only)']);
-    exit;
-}
-
-// Validate image dimensions (prevent tiny images)
-$is_video = strpos($mime_type, 'video/') === 0;
-if (!$is_video) {
-    $image_info = @getimagesize($file['tmp_name']);
-    if (!$image_info || $image_info[0] < 200 || $image_info[1] < 200) {
+    if ($file['size'] > $max_size) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Image too small (min 200x200px)']);
+        echo json_encode(['success' => false, 'error' => 'File too large (max 50MB)']);
         exit;
     }
-}
 
-// Generate secure filename
-$ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-$filename = 'proof_' . $user_id . '_' . $user_quest['quest_id'] . '_' . time() . '.' . $ext;
-$upload_path = config('upload_dir') . 'proofs/' . $filename;
+    // Validate MIME type
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime_type = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
 
-// Move uploaded file
-if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Failed to save file']);
-    exit;
+    if (!in_array($mime_type, $allowed_mimes)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid file type (images and videos only)']);
+        exit;
+    }
+
+    // Validate image dimensions (prevent tiny images)
+    $is_video = strpos($mime_type, 'video/') === 0;
+    if (!$is_video) {
+        $image_info = @getimagesize($file['tmp_name']);
+        if (!$image_info || $image_info[0] < 200 || $image_info[1] < 200) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Image too small (min 200x200px)']);
+            exit;
+        }
+    }
+
+    // Generate secure filename
+    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = 'proof_' . $user_id . '_' . $user_quest['quest_id'] . '_' . time() . '.' . $ext;
+    $upload_path = config('upload_dir') . 'proofs/' . $filename;
+
+    // Move uploaded file
+    if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Failed to save file']);
+        exit;
+    }
+    
+    $file_size = $file['size'];
 }
 
 // Store submission in database
@@ -110,9 +122,9 @@ try {
     $stmt = $pdo->prepare("
         INSERT INTO submissions (
             user_id, user_quest_id, quest_id, 
-            file_path, file_name, file_size, mime_type,
+            file_path, file_name, file_size, mime_type, text_proof,
             verification_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     ");
     
     $stmt->execute([
@@ -121,8 +133,9 @@ try {
         $user_quest['quest_id'],
         $upload_path,
         $filename,
-        $file['size'],
-        $mime_type
+        $file_size,
+        $mime_type,
+        $text_proof
     ]);
     
     $submission_id = $pdo->lastInsertId();

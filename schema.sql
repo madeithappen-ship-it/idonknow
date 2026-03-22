@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS submissions;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS user_quests;
 DROP TABLE IF EXISTS chat_messages; -- Added chat_messages to drop list
+DROP TABLE IF EXISTS friends;
 DROP TABLE IF EXISTS admin_users;
 DROP TABLE IF EXISTS quests;
 DROP TABLE IF EXISTS users;
@@ -30,6 +31,8 @@ CREATE TABLE users (
     total_completed INT DEFAULT 0,
     current_streak INT DEFAULT 0,
     last_quest_date TIMESTAMP NULL,
+    last_spin_date DATE NULL,
+    last_seen TIMESTAMP NULL,
     status ENUM('active', 'suspended', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -37,6 +40,20 @@ CREATE TABLE users (
     KEY idx_email (email),
     KEY idx_level (level),
     KEY idx_xp (xp)
+);
+
+-- ========================================
+-- Friends Graph
+-- ========================================
+CREATE TABLE IF NOT EXISTS friends (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    friend_id INT NOT NULL,
+    status ENUM('pending', 'accepted') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_friendship (user_id, friend_id)
 );
 
 -- ========================================
@@ -111,10 +128,11 @@ CREATE TABLE submissions (
     user_id INT NOT NULL,
     user_quest_id INT NOT NULL,
     quest_id INT NOT NULL,
-    file_path VARCHAR(500) NOT NULL,
-    file_name VARCHAR(255) NOT NULL,
-    file_size INT NOT NULL,
+    file_path VARCHAR(500) NULL,
+    file_name VARCHAR(255) NULL,
+    file_size INT NULL,
     mime_type VARCHAR(100),
+    text_proof TEXT NULL,
     verification_status ENUM('pending', 'approved', 'rejected', 'expired') DEFAULT 'pending',
     verified_by INT NULL,
     verification_notes TEXT,
