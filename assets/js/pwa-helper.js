@@ -36,6 +36,7 @@ class PWAInstaller {
   constructor() {
     this.deferredPrompt = null;
     this.installBtn = null;
+    this.isInstallable = false;
     this.init();
   }
 
@@ -43,11 +44,13 @@ class PWAInstaller {
     // Create install button if not exists
     this.createInstallButton();
     
-    // Listen for before install prompt
+    // Listen for before install prompt (browser indicates app is installable)
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       this.deferredPrompt = e;
+      this.isInstallable = true;
       this.showInstallButton();
+      console.log('✅ App is installable - showing install button');
     });
 
     // Handle successful installation
@@ -55,7 +58,22 @@ class PWAInstaller {
       console.log('✅ App installed successfully');
       this.handleInstalled();
       this.deferredPrompt = null;
+      this.isInstallable = false;
     });
+
+    // Check if app is already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      console.log('App is running in standalone mode');
+      this.hideInstallButton();
+    }
+
+    // Show button after short delay even if beforeinstallprompt doesn't fire
+    setTimeout(() => {
+      if (!this.isInstallable && this.installBtn) {
+        this.showInstallButton();
+        this.installBtn.classList.add('always-show');
+      }
+    }, 2000);
   }
 
   createInstallButton() {
@@ -70,10 +88,10 @@ class PWAInstaller {
     button.id = 'pwa-install-btn';
     button.className = 'pwa-install-btn';
     button.innerHTML = `
-      <span class="pwa-icon">📲</span>
+      <span class="pwa-icon">⬇️</span>
       <span class="pwa-text">Install App</span>
     `;
-    button.style.display = 'none';
+    button.style.display = 'flex';
     
     // Add to nav or create container
     const nav = document.querySelector('.navbar');
@@ -86,7 +104,12 @@ class PWAInstaller {
     this.installBtn = button;
 
     // Add event listener
-    button.addEventListener('click', () => this.promptInstall());
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.promptInstall();
+    });
+
+    console.log('Install button created');
   }
 
   showInstallButton() {
@@ -104,32 +127,92 @@ class PWAInstaller {
   }
 
   async promptInstall() {
-    if (!this.deferredPrompt) {
-      return;
-    }
+    if (this.deferredPrompt && this.isInstallable) {
+      // Show install prompt if available
+      this.deferredPrompt.prompt();
+      
+      // Get user choice
+      const { outcome } = await this.deferredPrompt.userChoice;
+      console.log(`User response to install prompt: ${outcome}`);
 
-    // Show install prompt
-    this.deferredPrompt.prompt();
+      this.deferredPrompt = null;
+      this.isInstallable = false;
+      this.hideInstallButton();
+
+      // Show success message
+      if (outcome === 'accepted') {
+        this.showNotification('App installing! 🎉', 'Side Quest will appear on your home screen');
+      }
+    } else {
+      // Fallback: Show installation instructions
+      this.showInstallationGuide();
+    }
+  }
+
+  showInstallationGuide() {
+    const modal = document.createElement('div');
+    modal.className = 'pwa-install-modal';
+    modal.innerHTML = `
+      <div class="pwa-modal-content">
+        <button class="pwa-close-btn" onclick="this.parentElement.parentElement.remove()">&times;</button>
+        
+        <h2>📱 Install Side Quest App</h2>
+        
+        <div class="install-guide">
+          <div class="guide-section">
+            <h3>💙 Chrome / Edge Desktop</h3>
+            <ol>
+              <li>Click the install icon <strong>(⬇️)</strong> in the address bar</li>
+              <li>Click <strong>"Install"</strong> in the popup</li>
+              <li>App appears on your desktop!</li>
+            </ol>
+          </div>
+
+          <div class="guide-section">
+            <h3>📱 Android (Chrome / Edge)</h3>
+            <ol>
+              <li>Tap the menu <strong>(⋮)</strong></li>
+              <li>Select <strong>"Install app"</strong> or <strong>"Add to Home Screen"</strong></li>
+              <li>Confirm in the popup</li>
+              <li>App added to your home screen!</li>
+            </ol>
+          </div>
+
+          <div class="guide-section">
+            <h3>🍎 iPhone / iPad (Safari)</h3>
+            <ol>
+              <li>Tap the Share button <strong>(↑)</strong> at the bottom</li>
+              <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+              <li>Tap <strong>"Add"</strong></li>
+              <li>App appears on your home screen!</li>
+            </ol>
+          </div>
+
+          <div class="guide-section">
+            <h3>🔗 Desktop (Any Browser)</h3>
+            <ol>
+              <li>Right-click or use browser menu</li>
+              <li>Select <strong>"Create shortcut"</strong> or <strong>"Create app"</strong></li>
+              <li>App opens in fullscreen window</li>
+            </ol>
+          </div>
+
+          <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <p style="font-size: 13px; color: #999;">
+              <strong>💡 Tip:</strong> After installation, the app works offline and loads super fast!
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
     
-    // Get user choice
-    const { outcome } = await this.deferredPrompt.userChoice;
-    console.log(`User response to install prompt: ${outcome}`);
-
-    this.deferredPrompt = null;
-    this.hideInstallButton();
-
-    // Show success message
-    if (outcome === 'accepted') {
-      this.showNotification('App installed! 🎉', 'Side Quest is now on your home screen');
-    }
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('pwa-show'), 10);
   }
 
   handleInstalled() {
     this.hideInstallButton();
-    this.showNotification(
-      'Welcome to Side Quest! 🚀',
-      'Enjoy the app. It works offline too!'
-    );
+    this.showNotification('Welcome! 🚀', 'Side Quest is now on your device. Works offline too!');
   }
 
   showNotification(title, message) {
@@ -253,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     style.textContent = `
       /* PWA Install Button */
       .pwa-install-btn {
-        display: none;
+        display: flex;
         align-items: center;
         gap: 8px;
         padding: 8px 16px;
@@ -278,12 +361,100 @@ document.addEventListener('DOMContentLoaded', () => {
         animation: slideDown 0.3s ease;
       }
 
+      .pwa-install-btn.always-show {
+        animation: pulse 2s infinite;
+      }
+
       .pwa-icon {
+        font-size: 16px;
+        animation: bounce 2s infinite;
+      }
+
+      /* PWA Install Modal */
+      .pwa-install-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        padding: 20px;
+      }
+
+      .pwa-install-modal.pwa-show {
+        opacity: 1;
+      }
+
+      .pwa-modal-content {
+        background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+        border: 1px solid rgba(76, 175, 80, 0.3);
+        border-radius: 16px;
+        padding: 40px;
+        max-width: 600px;
+        width: 100%;
+        color: #fff;
+        position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .pwa-close-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: none;
+        border: none;
+        color: #aaa;
+        font-size: 28px;
+        cursor: pointer;
+        transition: color 0.3s;
+      }
+
+      .pwa-close-btn:hover {
+        color: #fff;
+      }
+
+      .pwa-modal-content h2 {
+        margin: 0 0 30px 0;
+        font-size: 28px;
+        background: linear-gradient(135deg, #4CAF50, #2196F3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .install-guide {
+        display: grid;
+        gap: 20px;
+      }
+
+      .guide-section {
+        background: rgba(255, 255, 255, 0.05);
+        border-left: 4px solid #4CAF50;
+        padding: 15px;
+        border-radius: 8px;
+      }
+
+      .guide-section h3 {
+        margin: 0 0 10px 0;
+        color: #4CAF50;
         font-size: 16px;
       }
 
-      .pwa-text {
-        font-size: 12px;
+      .guide-section ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .guide-section li {
+        margin-bottom: 8px;
+        color: #ddd;
       }
 
       /* PWA Toast Notifications */
@@ -351,6 +522,10 @@ document.addEventListener('DOMContentLoaded', () => {
           left: 15px;
           max-width: calc(100% - 30px);
         }
+
+        .pwa-modal-content {
+          padding: 30px 20px;
+        }
       }
 
       @keyframes slideDown {
@@ -362,6 +537,16 @@ document.addEventListener('DOMContentLoaded', () => {
           opacity: 1;
           transform: translateY(0);
         }
+      }
+
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
       }
     `;
     document.head.appendChild(style);
