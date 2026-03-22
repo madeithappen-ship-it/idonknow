@@ -298,6 +298,7 @@ function onSquareClick(e) {
     if (selectedSquare) {
         if (selectedSquare === targetSquare) {
             clearSelection();
+            clearHighlights();
             return;
         }
         
@@ -309,13 +310,16 @@ function onSquareClick(e) {
         
         if (move) {
             clearSelection();
+            clearHighlights();
             finishMove(move);
         } else {
             const piece = chess.get(targetSquare);
             if (piece && piece.color === myColor) {
                 setSelection(targetSquare);
+                highlightLegalMoves(targetSquare);
             } else {
                 clearSelection();
+                clearHighlights();
             }
         }
     } else {
@@ -750,6 +754,12 @@ function startGameUI(isComputer, opponentName = 'Computer') {
         setupAIDifficulty();
         hintsUsed = 0;
     }
+    
+    // Show live toggle for room owner (white player)
+    if (currentRoomId && myColor === 'w') {
+        document.getElementById('live-toggle-section').classList.remove('hidden');
+        setupLiveToggle();
+    }
 }
 
 // ============================================================================
@@ -801,6 +811,32 @@ function setupAIDifficulty() {
             if (chessAI) {
                 chessAI.setDifficulty(difficulty);
                 console.log(`AI difficulty set to: ${difficulty}`);
+            }
+        });
+    });
+}
+
+function setupLiveToggle() {
+    const toggleCheckbox = document.getElementById('toggle-live');
+    if (!toggleCheckbox) return;
+    
+    toggleCheckbox.addEventListener('change', () => {
+        const isLive = toggleCheckbox.checked ? 1 : 0;
+        fetchAPI('toggle_live', {
+            room_code: currentRoomId,
+            is_live: isLive
+        }).then(data => {
+            if (data.success) {
+                console.log('✅ Live status toggled:', isLive);
+                const label = toggleCheckbox.nextElementSibling;
+                if (label) {
+                    label.innerHTML = isLive ? 
+                        '<i class="fa-solid fa-broadcast-tower" style="color: #81b64c;"></i> Spectators Allowed (Live)' :
+                        '<i class="fa-solid fa-broadcast-tower" style="color: #666;"></i> Spectators Disabled';
+                }
+            } else {
+                alert('Error: ' + (data.error || 'Could not toggle live status'));
+                toggleCheckbox.checked = !toggleCheckbox.checked;
             }
         });
     });
@@ -975,6 +1011,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+    
+    // Setup Chat Send Button
+    const sendChatBtn = document.getElementById('btn-send-chat');
+    if (sendChatBtn) {
+        sendChatBtn.addEventListener('click', sendGameMessage);
+    }
+    
+    // Setup Chat Input Enter Key
+    const chatInput = document.getElementById('game-chat-input');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendGameMessage();
+            }
+        });
+    }
+    
+    // Poll for chat messages every 3 seconds when in game
+    setInterval(() => {
+        if (gameStatus === 'playing') {
+            pollChatMessages();
+        }
+    }, 3000);
 });
 
 // ============================================================================
@@ -1058,6 +1117,243 @@ document.getElementById('btn-resign').addEventListener('click', () => {
 document.getElementById('btn-draw').addEventListener('click', () => {
     alert('Draw offers are not supported in training/casual play right now.');
 });
+
+// ============================================================================
+// LEGAL MOVES HIGHLIGHTING
+// ============================================================================
+
+function highlightLegalMoves(sqName) {
+    clearHighlights();
+    const legalMoves = chess.moves({ square: sqName, verbose: true });
+    
+    legalMoves.forEach(move => {
+        const sq = document.querySelector(`[data-square="${move.to}"]`);
+        if (sq) {
+            sq.classList.add('legal-move');
+            sq.style.background = sq.style.background === 'rgba(129, 182, 76, 0.4)' ? 'rgba(129, 182, 76, 0.6)' : 'rgba(129, 182, 76, 0.4)';
+        }
+    });
+}
+
+function clearHighlights() {
+    document.querySelectorAll('.legal-move').forEach(sq => {
+        sq.classList.remove('legal-move');
+        sq.style.background = '';
+    });
+}
+
+// ============================================================================
+// COLOR SELECTION & TIME SELECTION
+// ============================================================================
+
+let selectedGameTime = 1800; // Default 30 minutes
+let gameStartTime = null;
+let gameTimerInterval = null;
+
+function showColorSelection(isMultiplayer = false) {
+    const modal = document.getElementById('color-selection-modal');
+    if (!modal) return;
+    
+    document.getElementById('btn-play-white').onclick = () => {
+        myColor = 'w';
+        modal.classList.add('hidden');
+        if (isMultiplayer) {
+            showTimeSelection();
+        }
+    };
+    
+    document.getElementById('btn-play-black').onclick = () => {
+        myColor = 'b';
+        modal.classList.add('hidden');
+        if (isMultiplayer) {
+            showTimeSelection();
+        }
+    };
+    
+    document.getElementById('btn-play-random').onclick = () => {
+        myColor = Math.random() < 0.5 ? 'w' : 'b';
+        modal.classList.add('hidden');
+        if (isMultiplayer) {
+            showTimeSelection();
+        }
+    };
+    
+    modal.classList.remove('hidden');
+}
+
+function showTimeSelection() {
+    const modal = document.getElementById('time-selection-modal');
+    if (!modal) return;
+    
+    document.querySelectorAll('.time-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.borderColor = '#666';
+        btn.onclick = () => {
+            document.querySelectorAll('.time-btn').forEach(b => {
+                b.style.borderColor = '#666';
+            });
+            selectedGameTime = parseInt(btn.getAttribute('data-time'));
+            btn.style.borderColor = '#81b64c';
+            btn.classList.add('active');
+        };
+    });
+    
+    // Default to 30 min
+    const defaultBtn = document.querySelector('[data-time="1800"]');
+    if (defaultBtn) {
+        defaultBtn.click();
+    }
+    
+    document.getElementById('btn-start-game-timer').onclick = () => {
+        modal.classList.add('hidden');
+        startGameWithTimer();
+    };
+    
+    modal.classList.remove('hidden');
+}
+
+function startGameWithTimer() {
+    gameStartTime = Date.now();
+    updateGameTimer();
+    gameTimerInterval = setInterval(updateGameTimer, 1000);
+}
+
+function updateGameTimer() {
+    if (!gameStartTime) return;
+    
+    const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+    const remaining = Math.max(0, selectedGameTime - elapsed);
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+    
+    const timerEl = document.getElementById('game-timer');
+    if (timerEl) {
+        timerEl.innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        timerEl.style.color = remaining < 60 ? '#ef4444' : '#81b64c';
+    }
+    
+    if (remaining <= 0) {
+        clearInterval(gameTimerInterval);
+        alert('Time is up! Game over.');
+        window.location.reload();
+    }
+}
+
+// ============================================================================
+// GAME CHAT
+// ============================================================================
+
+let chatMessages = [];
+
+function toggleGameChat() {
+    const modal = document.getElementById('game-chat-modal');
+    if (modal) {
+        modal.classList.toggle('hidden');
+    }
+}
+
+function sendGameMessage() {
+    const input = document.getElementById('game-chat-input');
+    if (!input || !input.value.trim()) return;
+    
+    const message = input.value.trim();
+    input.value = '';
+    
+    // Send to opponent via API
+    fetchAPI('send_chat', {
+        room_code: currentRoomId,
+        message: message,
+        sender: get_user()['username']
+    }).then(data => {
+        if (data.success) {
+            addChatMessage(get_user()['username'], message, true);
+        }
+    });
+}
+
+function addChatMessage(sender, text, isSent = false) {
+    const messagesDiv = document.getElementById('game-chat-messages');
+    if (!messagesDiv) return;
+    
+    // Remove "Waiting for messages" placeholder
+    const placeholder = messagesDiv.querySelector('p');
+    if (placeholder) placeholder.remove();
+    
+    const msgEl = document.createElement('div');
+    msgEl.style.cssText = `
+        margin-bottom: 10px; 
+        padding: 8px; 
+        background: ${isSent ? '#1a3a1a' : '#3a1a1a'}; 
+        border-radius: 5px; 
+        border-left: 3px solid ${isSent ? '#81b64c' : '#ff9800'};
+    `;
+    msgEl.innerHTML = `
+        <div style="color: ${isSent ? '#81b64c' : '#ff9800'}; font-weight: bold; font-size: 11px;">${sender}</div>
+        <div style="color: #fff; font-size: 12px; margin-top: 4px;">${escapeHtml(text)}</div>
+    `;
+    
+    messagesDiv.appendChild(msgEl);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    
+    // Show chat modal with notification
+    const modal = document.getElementById('game-chat-modal');
+    if (modal && modal.classList.contains('hidden') && !isSent) {
+        modal.classList.remove('hidden');
+        playNotificationSound();
+    }
+}
+
+function pollChatMessages() {
+    if (!currentRoomId) return;
+    
+    fetchAPI('get_chat', { room_code: currentRoomId }).then(data => {
+        if (data.success && data.messages) {
+            data.messages.forEach(msg => {
+                // Avoid duplicates
+                if (!chatMessages.some(m => m.id === msg.id)) {
+                    chatMessages.push(msg);
+                    addChatMessage(msg.sender, msg.message);
+                }
+            });
+        }
+    });
+}
+
+// ============================================================================
+// GAME PERSISTENCE
+// ============================================================================
+
+function saveGameState() {
+    if (!currentRoomId) return;
+    
+    localStorage.setItem(`game_${currentRoomId}`, JSON.stringify({
+        room_code: currentRoomId,
+        fen: chess.fen(),
+        my_color: myColor,
+        moves: chess.moves({ verbose: true }),
+        timestamp: Date.now(),
+        status: gameStatus
+    }));
+}
+
+function loadGameState(roomCode) {
+    const saved = localStorage.getItem(`game_${roomCode}`);
+    if (saved) {
+        try {
+            const state = JSON.parse(saved);
+            if (state && state.fen) {
+                chess.load(state.fen);
+                return state;
+            }
+        } catch (e) {
+            console.log('Could not load saved game state');
+        }
+    }
+    return null;
+}
+
+// Save game state periodically
+setInterval(saveGameState, 5000);
 
 // ============================================================================
 // PLAYER MANAGEMENT & CHALLENGES

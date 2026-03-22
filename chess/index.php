@@ -121,12 +121,60 @@ $username = get_user()['username'];
         </div>
     </div>
 
+    <!-- Color Selection Modal -->
+    <div id="color-selection-modal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 2000;">
+        <div style="background: #262421; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
+            <h2 style="color: #fff; margin-bottom: 20px;">Choose Your Color</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <button id="btn-play-white" class="btn" style="padding: 20px; background: white; color: black; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: transform 0.2s;">
+                    ♙ WHITE
+                </button>
+                <button id="btn-play-black" class="btn" style="padding: 20px; background: black; color: white; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; border: 2px solid #81b64c; transition: transform 0.2s;">
+                    ♟ BLACK
+                </button>
+            </div>
+            <button id="btn-play-random" class="btn btn-primary" style="width: 100%; padding: 15px;">
+                <i class="fa-solid fa-dice"></i> Random Color
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Time Selection Modal -->
+    <div id="time-selection-modal" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 2000;">
+        <div style="background: #262421; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
+            <h2 style="color: #fff; margin-bottom: 20px;">Select Game Time</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <button class="time-btn" data-time="300" style="padding: 15px; background: #312e2b; color: #fff; border: 2px solid #81b64c; border-radius: 8px; cursor: pointer; font-weight: bold;">5 min</button>
+                <button class="time-btn" data-time="600" style="padding: 15px; background: #312e2b; color: #fff; border: 2px solid #666; border-radius: 8px; cursor: pointer; font-weight: bold;">10 min</button>
+                <button class="time-btn" data-time="900" style="padding: 15px; background: #312e2b; color: #fff; border: 2px solid #666; border-radius: 8px; cursor: pointer; font-weight: bold;">15 min</button>
+                <button class="time-btn" data-time="1800" style="padding: 15px; background: #312e2b; color: #fff; border: 2px solid #666; border-radius: 8px; cursor: pointer; font-weight: bold;">30 min</button>
+            </div>
+            <button id="btn-start-game-timer" class="btn btn-primary" style="width: 100%; padding: 15px;">Start Game</button>
+        </div>
+    </div>
+
+    <!-- Game Chat Modal (In Game) -->
+    <div id="game-chat-modal" class="hidden" style="position: fixed; bottom: 20px; left: 20px; background: #262421; border: 2px solid #81b64c; border-radius: 10px; width: 280px; max-height: 400px; display: flex; flex-direction: column; z-index: 1500; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+        <div style="background: linear-gradient(135deg, #312e2b 0%, #1a1a2e 100%); padding: 12px; border-bottom: 2px solid #81b64c; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #81b64c; font-weight: bold;">💬 Game Chat</span>
+            <button onclick="toggleGameChat()" style="background: none; border: none; color: #81b64c; cursor: pointer; font-size: 16px; padding: 0 5px;">✕</button>
+        </div>
+        <div id="game-chat-messages" style="flex: 1; overflow-y: auto; padding: 10px; background: #1a1a2e; min-height: 150px;">
+            <p style="color: #888; text-align: center; font-size: 12px; margin: 20px 0;">Waiting for messages...</p>
+        </div>
+        <div style="display: flex; gap: 5px; padding: 10px; border-top: 1px solid #403d39;">
+            <input type="text" id="game-chat-input" placeholder="Message..." style="flex: 1; background: #000; color: #fff; border: 1px solid #403d39; border-radius: 5px; padding: 8px; font-size: 12px;">
+            <button id="btn-send-chat" style="background: #81b64c; color: black; border: none; border-radius: 5px; padding: 8px 12px; cursor: pointer; font-weight: bold;">Send</button>
+        </div>
+    </div>
+
     <!-- Active Game Panel (Hidden initially) -->
     <div class="sidebar-content hidden" id="panel-playing">
         <div class="game-controls">
             <div class="status-indicator">
                 <i class="fa-solid fa-circle-play"></i>
                 <span id="game-status-text">Game in Progress</span>
+                <span id="game-timer" style="margin-left: 10px; font-weight: bold; color: #81b64c;">00:00</span>
             </div>
             
             <!-- AI Difficulty Selector (shown only vs computer) -->
@@ -145,6 +193,14 @@ $username = get_user()['username'];
                 <input type="checkbox" id="coach-enabled" checked style="cursor: pointer;">
                 <label for="coach-enabled" style="color: #c3c3c0; font-size: 13px; cursor: pointer; flex: 1;">
                     <i class="fa-solid fa-graduation-cap"></i> AI Coach
+                </label>
+            </div>
+            
+            <!-- Live Broadcast Toggle (Room Owner Only) -->
+            <div id="live-toggle-section" class="hidden" style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; background: #1a3a1a; padding: 10px; border-radius: 8px; border-left: 3px solid #81b64c;">
+                <input type="checkbox" id="toggle-live" style="cursor: pointer;">
+                <label for="toggle-live" style="color: #c3c3c0; font-size: 13px; cursor: pointer; flex: 1;">
+                    <i class="fa-solid fa-broadcast-tower" style="color: #81b64c;"></i> Allow Spectators (Live)
                 </label>
             </div>
             

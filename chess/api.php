@@ -25,7 +25,7 @@ try {
         $roomCode = strtoupper(substr(md5(uniqid()), 0, 6)); // 6 letter code
         
         // Use INSERT IGNORE to prevent duplicate key errors
-        $stmt = $pdo->prepare("INSERT INTO chess_rooms (room_code, player_w_name, player_b_name, status, created_at) VALUES (?, ?, ?, 'waiting', NOW())");
+        $stmt = $pdo->prepare("INSERT INTO chess_rooms (room_code, player_w_name, player_b_name, status, is_live, created_at) VALUES (?, ?, ?, 'waiting', 0, NOW())");
         $stmt->execute([$roomCode, $username, $target]);
         
         header('Cache-Control: no-cache');
@@ -156,7 +156,7 @@ try {
     }
     
     elseif ($action === 'get_live_games') {
-        // Get all ongoing games (playing status)
+        // Get all ongoing games (playing status) that are marked as live
         $stmt = $pdo->prepare("
             SELECT 
                 room_code,
@@ -169,6 +169,7 @@ try {
                 (SELECT COUNT(*) FROM chess_spectators WHERE room_code = chess_rooms.room_code) as spectator_count
             FROM chess_rooms 
             WHERE status = 'playing'
+            AND is_live = 1
             AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
             ORDER BY created_at DESC
             LIMIT 20
@@ -294,6 +295,82 @@ try {
         $analysis = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         echo json_encode(['success' => true, 'analysis' => $analysis]);
+    }
+    
+    elseif ($action === 'toggle_live') {
+        $roomCode = strtoupper($input['room_code'] ?? '');
+        $isLive = intval($input['is_live'] ?? 0);
+        $username = get_user()['username'];
+        
+        // Get room to check if user is owner
+        $stmt = $pdo->prepare("SELECT player_w_name, status FROM chess_rooms WHERE room_code = ?");
+        $stmt->execute([$roomCode]);
+        $room = $stmt->fetch();
+        
+        if (!$room) {
+            echo json_encode(['success' => false, 'error' => 'Room not found']);
+            exit;
+        }
+        
+        if ($room['player_w_name'] !== $username) {
+            echo json_encode(['success' => false, 'error' => 'Only room owner can change live status']);
+            exit;
+        }
+        
+        // Update is_live status
+        $stmt = $pdo->prepare("UPDATE chess_rooms SET is_live = ? WHERE room_code = ?");
+        $stmt->execute([$isLive, $roomCode]);
+        
+        echo json_encode(['success' => true, 'is_live' => $isLive]);
+    }
+    
+    elseif ($action === 'send_chat') {
+        $roomCode = strtoupper($input['room_code'] ?? '');
+        $message = $input['message'] ?? '';
+        $sender = $input['sender'] ?? get_user()['username'];
+        
+        if (empty($message) || strlen($message) > 500) {
+            echo json_encode(['success' => false, 'error' => 'Invalid message']);
+            exit;
+        }
+        
+        // Create chat table if it doesn't exist
+        $pdo->exec("CREATE TABLE IF NOT EXISTS chess_chat (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            room_code VARCHAR(10) NOT NULL,
+            sender VARCHAR(50) NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (room_code) REFERENCES chess_rooms(room_code) ON DELETE CASCADE,
+            INDEX idx_room (room_code, created_at)
+        )");
+        
+        $stmt = $pdo->prepare("INSERT INTO chess_chat (room_code, sender, message) VALUES (?, ?, ?)");
+        $stmt->execute([$roomCode, $sender, $message]);
+        
+        echo json_encode(['success' => true, 'message_id' => $pdo->lastInsertId()]);
+    }
+    
+    elseif ($action === 'get_chat') {
+        $roomCode = strtoupper($input['room_code'] ?? '');
+        $sinceId = intval($input['last_id'] ?? 0);
+        
+        // Fetch chat messages since last_id
+        $stmt = $pdo->prepare("
+            SELECT 
+                id,
+                sender,
+                message,
+                created_at
+            FROM chess_chat
+            WHERE room_code = ? AND id > ?
+            ORDER BY created_at ASC
+            LIMIT 50
+        ");
+        $stmt->execute([$roomCode, $sinceId]);
+        $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode(['success' => true, 'messages' => $messages]);
     }
     
     else {

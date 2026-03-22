@@ -9,6 +9,7 @@ require_once(__DIR__ . '/../config.php');
 $queries = [
     // Add columns to chess_rooms if they don't exist
     "ALTER TABLE chess_rooms ADD COLUMN IF NOT EXISTS is_public TINYINT DEFAULT 1",
+    "ALTER TABLE chess_rooms ADD COLUMN IF NOT EXISTS is_live TINYINT DEFAULT 0",
     "ALTER TABLE chess_rooms ADD COLUMN IF NOT EXISTS spectator_count INT DEFAULT 0",
     "ALTER TABLE chess_rooms ADD COLUMN IF NOT EXISTS ai_analysis JSON DEFAULT NULL",
     
