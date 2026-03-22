@@ -174,6 +174,26 @@ $is_chat_admin = is_admin();
     60% { text-shadow: .25em 0 0 #888, .5em 0 0 rgba(0,0,0,0); }
     80%, 100% { text-shadow: .25em 0 0 #888, .5em 0 0 #888; }
 }
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
 </style>
 
 <div id="chat-widget">
@@ -296,6 +316,113 @@ function backToConvs() {
     loadChatConversations();
 }
 
+function showChatNotification(senderName, message, isAdmin = false) {
+    // Request notification permission if not granted
+    if (Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+    
+    // Show browser notification if allowed
+    if (Notification.permission === 'granted') {
+        new Notification('New ' + (isAdmin ? 'Admin' : 'User') + ' Message', {
+            body: senderName + ': ' + message.substring(0, 80) + (message.length > 80 ? '...' : ''),
+            icon: '💬',
+            tag: 'chat-notification',
+            requireInteraction: false
+        });
+    }
+    
+    // Show toast notification
+    showChatToast(senderName, message);
+    
+    // Play notification sound
+    playChatSound();
+}
+
+function showChatToast(name, msg) {
+    // Create toast container if not exists
+    let toastContainer = document.getElementById('chat-toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'chat-toast-container';
+        toastContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10001;
+            pointer-events: none;
+        `;
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    const toastId = 'toast-' + Date.now();
+    toast.id = toastId;
+    toast.style.cssText = `
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 16px 20px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        pointer-events: auto;
+        cursor: pointer;
+        max-width: 350px;
+        word-wrap: break-word;
+        animation: slideIn 0.3s ease-out;
+        font-size: 13px;
+        line-height: 1.4;
+    `;
+    
+    toast.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 4px;">💬 ${escapeHtml(name)}</div>
+        <div style="opacity: 0.95;">${escapeHtml(msg.substring(0, 100))}${msg.length > 100 ? '...' : ''}</div>
+        <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">Click to view or will auto-hide</div>
+    `;
+    
+    toast.onclick = () => {
+        if (!_isChatOpen) toggleChat();
+        toast.style.animation = 'slideOut 0.3s ease-in forwards';
+        setTimeout(() => toastContainer.removeChild(toast), 300);
+    };
+    
+    toastContainer.appendChild(toast);
+    
+    // Auto-remove after 6 seconds
+    setTimeout(() => {
+        if (document.getElementById(toastId)) {
+            toast.style.animation = 'slideOut 0.3s ease-in forwards';
+            setTimeout(() => {
+                if (toastContainer.contains(toast)) toastContainer.removeChild(toast);
+            }, 300);
+        }
+    }, 6000);
+}
+
+function playChatSound() {
+    // Create a simple beep sound using Web Audio API
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+    } catch (e) {
+        // Fallback silent - older browsers won't support
+    }
+}
+
 function loadChatMessages() {
     if (!_isChatOpen) return;
     
@@ -322,10 +449,19 @@ function loadChatMessages() {
         
         let shouldScroll = (body.scrollTop + body.clientHeight) >= (body.scrollHeight - 20) || _lastChatMsgId === 0;
         if (_lastChatMsgId === 0) body.innerHTML = '';
+        
+        let newMessagesCount = 0;
+        let lastNewSender = '';
+        let lastNewMsg = '';
 
         
         d.messages.forEach(m => {
-            if (m.id > _lastChatMsgId) _lastChatMsgId = m.id;
+            if (m.id > _lastChatMsgId) {
+                _lastChatMsgId = m.id;
+                newMessagesCount++;
+                lastNewSender = _isAdminChat ? "User" : "Admin";
+                lastNewMsg = m.message;
+            }
             let isMine = (_isAdminChat && m.sender_type === 'admin') || (!_isAdminChat && m.sender_type === 'user');
             
             let delBtn = _isAdminChat ? `<span style="font-size:10px; cursor:pointer; color:#888; margin: 0 5px;" title="Delete message" onclick="deleteChatMsg(${m.id})">🗑️</span>` : '';
@@ -335,6 +471,11 @@ function loadChatMessages() {
             div.innerHTML = isMine ? delBtn + linkifyText(m.message) : linkifyText(m.message) + delBtn;
             body.appendChild(div);
         });
+        
+        // Show notification for new incoming messages
+        if (newMessagesCount > 0 && lastNewMsg) {
+            showChatNotification(lastNewSender, lastNewMsg, _isAdminChat);
+        }
         
         if (shouldScroll && d.messages.length > 0) {
             body.scrollTop = body.scrollHeight; 
@@ -356,6 +497,8 @@ function sendChat() {
     fetch('chat_api.php', {method: 'POST', body: fd}).then(() => loadChatMessages());
 }
 
+let _lastUnreadCount = 0;
+
 function pollChat() {
     if (_isChatOpen) {
         if (_isAdminChat && _activeChatUser === 0) {
@@ -369,8 +512,15 @@ function pollChat() {
                 let b = document.getElementById('chat-badge');
                 b.innerText = d.count;
                 b.style.display = 'block';
+                
+                // Show notification only for NEW unread messages
+                if (d.count > _lastUnreadCount) {
+                    showChatNotification('New Message', 'You have ' + d.count + ' unread message' + (d.count > 1 ? 's' : '') + ' 📬', _isAdminChat);
+                }
+                _lastUnreadCount = d.count;
             } else {
                 document.getElementById('chat-badge').style.display = 'none';
+                _lastUnreadCount = 0;
             }
         });
     }

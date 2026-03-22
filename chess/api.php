@@ -162,15 +162,15 @@ try {
                 room_code,
                 player_w_name,
                 player_b_name,
-                started_at,
+                created_at as started_at,
                 status,
                 fen,
-                TIMESTAMPDIFF(SECOND, started_at, NOW()) as elapsed_seconds
+                TIMESTAMPDIFF(SECOND, created_at, NOW()) as elapsed_seconds,
+                (SELECT COUNT(*) FROM chess_spectators WHERE room_code = chess_rooms.room_code) as spectator_count
             FROM chess_rooms 
             WHERE status = 'playing'
-            AND started_at IS NOT NULL
-            AND started_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
-            ORDER BY started_at DESC
+            AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+            ORDER BY created_at DESC
             LIMIT 20
         ");
         $stmt->execute();
@@ -181,9 +181,119 @@ try {
             $game['elapsed_seconds'] = (int)$game['elapsed_seconds'];
             $game['remaining_seconds'] = max(0, 1800 - $game['elapsed_seconds']);
             $game['game_over'] = $game['remaining_seconds'] <= 0;
+            $game['spectator_count'] = (int)$game['spectator_count'];
         }
         
         echo json_encode(['success' => true, 'games' => $games]);
+    }
+    
+    elseif ($action === 'join_spectate') {
+        $roomCode = strtoupper($input['room_code'] ?? '');
+        $username = get_user()['username'];
+        
+        // Check if room exists and is playing
+        $stmt = $pdo->prepare("SELECT room_code, status, fen FROM chess_rooms WHERE room_code = ? AND status = 'playing'");
+        $stmt->execute([$roomCode]);
+        $room = $stmt->fetch();
+        
+        if (!$room) {
+            echo json_encode(['success' => false, 'error' => 'Game not found or not in progress']);
+            exit;
+        }
+        
+        // Add as spectator
+        $stmt = $pdo->prepare("INSERT IGNORE INTO chess_spectators (room_code, username) VALUES (?, ?)");
+        $stmt->execute([$roomCode, $username]);
+        
+        // Get full game state for spectator
+        $stmt = $pdo->prepare("
+            SELECT id, color, move_from, move_to, fen_after FROM chess_moves 
+            WHERE room_code = ? ORDER BY id ASC
+        ");
+        $stmt->execute([$roomCode]);
+        $moves = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode(['success' => true, 'room' => $room, 'moves' => $moves]);
+    }
+    
+    elseif ($action === 'watch_live') {
+        $roomCode = strtoupper($input['room_code'] ?? '');
+        $lastMoveId = intval($input['last_move_id'] ?? 0);
+        
+        // Verify room exists
+        $stmt = $pdo->prepare("SELECT room_code, player_w_name, player_b_name, status, result_reason FROM chess_rooms WHERE room_code = ?");
+        $stmt->execute([$roomCode]);
+        $room = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$room) {
+            echo json_encode(['success' => false, 'error' => 'Room not found']);
+            exit;
+        }
+        
+        // Get new moves since last check
+        $stmt = $pdo->prepare("
+            SELECT id, color, move_from, move_to, fen_after, created_at FROM chess_moves 
+            WHERE room_code = ? AND id > ? ORDER BY id ASC LIMIT 50
+        ");
+        $stmt->execute([$roomCode, $lastMoveId]);
+        $newMoves = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Get latest analysis
+        $stmt = $pdo->prepare("
+            SELECT evaluation, best_move, depth, analysis_json FROM chess_analysis
+            WHERE room_code = ? ORDER BY id DESC LIMIT 1
+        ");
+        $stmt->execute([$roomCode]);
+        $analysis = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'success' => true,
+            'room' => $room,
+            'moves' => $newMoves,
+            'analysis' => $analysis,
+            'spectator_count' => (int)($input['show_spectators'] ? 0 : 0) // TODO: implement live count
+        ]);
+    }
+    
+    elseif ($action === 'record_analysis') {
+        $roomCode = strtoupper($input['room_code'] ?? '');
+        $moveId = intval($input['move_id'] ?? 0);
+        $evaluation = floatval($input['evaluation'] ?? 0);
+        $bestMove = $input['best_move'] ?? null;
+        $depth = intval($input['depth'] ?? 0);
+        $analysisJson = json_encode($input['analysis'] ?? []);
+        
+        // Insert analysis record
+        $stmt = $pdo->prepare("
+            INSERT INTO chess_analysis 
+            (room_code, move_id, evaluation, best_move, depth, analysis_json)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$roomCode, $moveId, $evaluation, $bestMove, $depth, $analysisJson]);
+        
+        echo json_encode(['success' => true, 'analysis_id' => $pdo->lastInsertId()]);
+    }
+    
+    elseif ($action === 'get_game_analysis') {
+        $roomCode = strtoupper($input['room_code'] ?? '');
+        
+        $stmt = $pdo->prepare("
+            SELECT 
+                move_id,
+                evaluation,
+                best_move,
+                depth,
+                analysis_json,
+                created_at
+            FROM chess_analysis
+            WHERE room_code = ?
+            ORDER BY created_at DESC
+            LIMIT 50
+        ");
+        $stmt->execute([$roomCode]);
+        $analysis = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode(['success' => true, 'analysis' => $analysis]);
     }
     
     else {

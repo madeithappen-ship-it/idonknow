@@ -198,6 +198,42 @@ $username = get_user()['username'];
         </div>
     </div>
 
+    <!-- Spectator Panel (Hidden initially) -->
+    <div class="sidebar-content hidden" id="panel-spectate">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 class="section-title" style="margin: 0;">🎬 Spectating</h2>
+            <button id="btn-stop-spectate" class="btn btn-outline" onclick="stopSpectating()" style="padding: 6px 12px; font-size: 12px;">Exit</button>
+        </div>
+        
+        <div style="background: #312e2b; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 3px solid #4CAF50;">
+            <div style="color: #888; font-size: 11px; margin-bottom: 3px;">Game</div>
+            <div id="spectate-room-code" style="color: #fff; font-weight: bold; font-size: 14px;">-</div>
+            <div id="spectate-players" style="color: #aaa; font-size: 12px; margin-top: 5px;">Loading...</div>
+        </div>
+        
+        <!-- AI Analysis Panel -->
+        <div id="spectate-analysis" style="background: #1a1a2e; padding: 12px; border-radius: 5px; margin-bottom: 12px;">
+            <div style="color: #888; text-align: center; padding: 20px;">
+                Waiting for AI analysis...
+            </div>
+        </div>
+        
+        <!-- Game Chat/Comments (Optional) -->
+        <div style="background: #1a1a2e; padding: 12px; border-radius: 5px; margin-bottom: 12px;">
+            <div style="color: #888; font-size: 11px; margin-bottom: 8px; font-weight: 600;">📊 Game Stats</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+                <div>
+                    <span style="color: #aaa;">Moves:</span>
+                    <span id="spectate-move-count" style="color: #fff; font-weight: bold;">0</span>
+                </div>
+                <div>
+                    <span style="color: #aaa;">Status:</span>
+                    <span id="spectate-status" style="color: #4CAF50; font-weight: bold;">Live</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Games Panel (Placeholder) -->
     <div class="sidebar-content hidden" id="panel-games">
         <h2 class="section-title">My Games</h2>
