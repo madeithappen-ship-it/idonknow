@@ -782,6 +782,7 @@ $token = csrf_token();
                                     <button class="btn btn-success btn-sm" onclick="approveSubmission(<?php echo $sub['id']; ?>)">Approve</button>
                                     <button class="btn btn-warning btn-sm" style="background:#ff9800; border-color:#ff9800; color:#fff;" onclick="rejectSubmission(<?php echo $sub['id']; ?>)">Reject</button>
                                 <?php endif; ?>
+                                <button class="btn btn-info btn-sm" onclick="startAdminChat(<?php echo $sub['user_id']; ?>, '<?php echo escape(addslashes($sub['username'])); ?>')">Reply</button>
                                 <button class="btn btn-danger btn-sm" style="background:#cc0000; border-color:#cc0000;" onclick="deleteSubmission(<?php echo $sub['id']; ?>)">Delete</button>
                             </td>
                         </tr>

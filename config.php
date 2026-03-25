@@ -45,16 +45,25 @@ ini_set('error_log', __DIR__ . '/logs/error.log');
 // Performance & Caching Headers
 // ========================================
 if (!headers_sent()) {
-    // Enable gzip compression
-    if (!extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
+    // Enable gzip compression for all responses
+    if (!ini_get('zlib.output_compression')) {
         ob_start('ob_gzhandler');
     }
     
-    // Cache static content in browser for production
-    if (getenv('DEVELOPMENT_MODE') !== 'true') {
-        header('Cache-Control: public, max-age=3600');
+    // Add compression header explicitly
+    header('Vary: Accept-Encoding');
+    
+    // Cache strategy based on environment
+    $is_development = getenv('DEVELOPMENT_MODE') === 'true' || getenv('APP_ENV') === 'development';
+    
+    if (!$is_development) {
+        // Production: Aggressive caching
+        header('Cache-Control: public, max-age=604800, immutable'); // 1 week for static
     } else {
-        header('Cache-Control: no-cache, no-store, must-revalidate');
+        // Development: No caching
+        header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
     }
 }
 
@@ -137,6 +146,12 @@ try {
         die("Database connection failed. Please try again later.");
     }
 }
+
+// ========================================
+// Load Performance & Caching Layer
+// ========================================
+require_once(__DIR__ . '/cache.php');
+require_once(__DIR__ . '/query-optimizer.php');
 
 // ========================================
 // Session Configuration

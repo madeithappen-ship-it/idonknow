@@ -13,9 +13,16 @@ if (!is_logged_in()) {
 $user = get_user();
 $user_id = $user['id'];
 
-// Fetch Daily Quest Settings
-$stmt = $pdo->query("SELECT setting_value FROM global_settings WHERE setting_key = 'daily_quest'");
-$dq_setting = $stmt->fetch();
+// Fetch Daily Quest Settings (cached for 1 hour)
+$dq_setting = cache_remember(
+    'daily_quest_setting_' . date('Y-m-d'),
+    3600,
+    function() {
+        global $pdo;
+        $stmt = $pdo->query("SELECT setting_value FROM global_settings WHERE setting_key = 'daily_quest' LIMIT 1");
+        return $stmt->fetch();
+    }
+);
 $dq_raw = $dq_setting ? json_decode($dq_setting['setting_value'], true) : null;
 $today = date('Y-m-d');
 
@@ -74,15 +81,22 @@ $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $current_quest = $stmt->fetch();
 
-// Get top users for leaderboard
-$stmt = $pdo->query("
-    SELECT username, level, xp, total_completed
-    FROM users
-    WHERE status = 'active'
-    ORDER BY level DESC, xp DESC
-    LIMIT 10
-");
-$leaderboard = $stmt->fetchAll();
+// Get top users for leaderboard (cached for 1 hour)
+$leaderboard = cache_remember(
+    'leaderboard_top_10',
+    3600,
+    function() {
+        global $pdo;
+        $stmt = $pdo->query("
+            SELECT username, level, xp, total_completed
+            FROM users
+            WHERE status = 'active'
+            ORDER BY level DESC, xp DESC
+            LIMIT 10
+        ");
+        return $stmt->fetchAll();
+    }
+);
 
 // Get user's submission history
 $stmt = $pdo->prepare("

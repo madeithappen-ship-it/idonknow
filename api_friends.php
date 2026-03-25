@@ -17,22 +17,30 @@ if (!$input && isset($_POST['action'])) {
 $action = $input['action'] ?? '';
 
 if ($action === 'search_user') {
-    // Find users not already in the friends list natively
-    $stmt = $pdo->prepare("
-        SELECT id, COALESCE(display_name, username) as name, avatar_url, level
-        FROM users
-        WHERE id != ?
-        AND status = 'active'
-        AND id NOT IN (
-            SELECT friend_id FROM friends WHERE user_id = ?
-            UNION 
-            SELECT user_id FROM friends WHERE friend_id = ?
-        )
-        ORDER BY last_seen DESC
-        LIMIT 100
-    ");
-    $stmt->execute([$user_id, $user_id, $user_id]);
-    echo json_encode(['success' => true, 'results' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    // Cache search results for 30 minutes per user
+    $search_query = $input['query'] ?? '';
+    $results = cache_remember(
+        'friend_search_' . $user_id . '_' . md5($search_query),
+        1800,
+        function() use ($user_id, $pdo) {
+            $stmt = $pdo->prepare("
+                SELECT id, COALESCE(display_name, username) as name, avatar_url, level
+                FROM users
+                WHERE id != ?
+                AND status = 'active'
+                AND id NOT IN (
+                    SELECT friend_id FROM friends WHERE user_id = ?
+                    UNION 
+                    SELECT user_id FROM friends WHERE friend_id = ?
+                )
+                ORDER BY last_seen DESC
+                LIMIT 100
+            ");
+            $stmt->execute([$user_id, $user_id, $user_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+    );
+    echo json_encode(['success' => true, 'results' => $results]);
     exit;
 }
 
@@ -81,23 +89,49 @@ if ($action === 'respond_friend') {
 }
 
 if ($action === 'list_friends') {
+    // Cache friends list for 10 minutes
     // 1. Pending Requests (where I am the friend_id)
-    $stmt = $pdo->prepare("
-        SELECT f.id as request_id, COALESCE(u.display_name, u.username) as name, u.avatar_url, u.level
-        FROM friends f
-        JOIN users u ON f.user_id = u.id
-        WHERE f.friend_id = ? AND f.status = 'pending'
-    ");
-    $stmt->execute([$user_id]);
-    $pending = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $pending = cache_remember(
+        'pending_friends_' . $user_id,
+        600,
+        function() use ($user_id, $pdo) {
+            $stmt = $pdo->prepare("
+                SELECT f.id as request_id, COALESCE(u.display_name, u.username) as name, u.avatar_url, u.level
+                FROM friends f
+                JOIN users u ON f.user_id = u.id
+                WHERE f.friend_id = ? AND f.status = 'pending'
+                ORDER BY f.created_at DESC
+            ");
+            $stmt->execute([$user_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+    );
     
     // 2. Accepted Friends (I could be user_id or friend_id)
-    $stmt = $pdo->prepare("
-        SELECT u.id, COALESCE(u.display_name, u.username) as name, u.avatar_url, u.level, u.last_seen
-        FROM friends f
-        JOIN users u ON (u.id = f.user_id OR u.id = f.friend_id)
-        WHERE (f.user_id = ? OR f.friend_id = ?) AND f.status = 'accepted' AND u.id != ?
-        ORDER BY u.last_seen DESC
+    $friends = cache_remember(
+        'accepted_friends_' . $user_id,
+        600,
+        function() use ($user_id, $pdo) {
+            $stmt = $pdo->prepare("
+                SELECT u.id, COALESCE(u.display_name, u.username) as name, u.avatar_url, u.level, u.last_seen
+                FROM friends f
+                JOIN users u ON (u.id = f.user_id OR u.id = f.friend_id)
+                WHERE (f.user_id = ? OR f.friend_id = ?) AND f.status = 'accepted' AND u.id != ?
+                ORDER BY u.last_seen DESC
+                LIMIT 50
+            ");
+            $stmt->execute([$user_id, $user_id, $user_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+    );
+    
+    echo json_encode([
+        'success' => true,
+        'pending' => $pending,
+        'friends' => $friends
+    ]);
+    exit;
+}
     ");
     $stmt->execute([$user_id, $user_id, $user_id]);
     $friends = $stmt->fetchAll(PDO::FETCH_ASSOC);
